@@ -322,6 +322,33 @@ select.oip-filter-btn {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.oip-row-link {
+  color: var(--m-text);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.oip-row-link:hover {
+  color: var(--m-accent);
+  text-decoration: underline;
+}
+.oip-ext-link {
+  display: inline-flex;
+  align-items: center;
+  color: var(--m-text-3);
+  flex-shrink: 0;
+  padding: 2px;
+  border-radius: 4px;
+  transition: all 0.1s;
+}
+.oip-ext-link:hover {
+  color: var(--m-accent);
+  background: #e6f0fd;
 }
 .oip-row-cell {
   font-size: 0.8125rem;

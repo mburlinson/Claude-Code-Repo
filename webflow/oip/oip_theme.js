@@ -53,6 +53,7 @@
   /* ── SVG icons ───────────────────────────────────────────── */
   var ICON_SEARCH = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="7" cy="7" r="5"/><line x1="11" y1="11" x2="15" y2="15"/></svg>';
   var ICON_CHEVRON = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l4 4-4 4"/></svg>';
+  var ICON_EXTLINK = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 7v4a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h4"/><path d="M8 2h4v4"/><path d="M6 8L12 2"/></svg>';
 
   /* ── Data extraction from page ─────────────────────────────── */
   var items = [];
@@ -91,6 +92,7 @@
         score: parseInt(read('data-score', 'oip-score'), 10) || 0,
         deadline: read('data-deadline', 'oip-dl'),
         slug: card.getAttribute('href') || card.closest('a')?.getAttribute('href') || '#',
+        sourceUrl: read('data-source-url', 'oip-src-url'),
         buyerName: '',
         fee: '',
         bidDecision: ''
@@ -366,16 +368,20 @@
         else if (dec === 'No-Bid') decCls = 'oip-decision--no-bid';
         else if (dec === 'Conditional') decCls = 'oip-decision--conditional';
 
-        html += '<a class="oip-row" href="' + item.slug + '">' +
+        var srcLink = item.sourceUrl
+          ? '<a href="' + item.sourceUrl + '" target="_blank" rel="noopener" class="oip-ext-link" title="View bid request">' + ICON_EXTLINK + '</a>'
+          : '';
+
+        html += '<div class="oip-row">' +
           '<div class="oip-row-color" style="background:' + color + '"></div>' +
-          '<div class="oip-row-name">' + item.name + '</div>' +
+          '<div class="oip-row-name"><a href="' + item.slug + '" class="oip-row-link">' + item.name + '</a>' + srcLink + '</div>' +
           '<div class="oip-row-cell">' + (item.buyerName || '—') + '</div>' +
           '<div class="oip-row-cell">' + (item.source || '—') + '</div>' +
           '<div class="oip-row-cell">' + buyerPill(item.buyerType) + '</div>' +
           '<div class="oip-row-cell oip-deadline-text">' + deadlineHtml(item.deadline) + '</div>' +
           '<div class="oip-row-cell">' + scoreHtml(item.score) + '</div>' +
           '<div class="oip-row-cell">' + (dec ? '<span class="oip-buyer-pill ' + decCls + '">' + dec + '</span>' : '—') + '</div>' +
-          '</a>';
+          '</div>';
       });
       html += '</div>'; // group-rows
       html += '</div>'; // group
