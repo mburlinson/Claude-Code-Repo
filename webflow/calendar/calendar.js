@@ -87,7 +87,18 @@ function getField(item, fieldName) {
   if (el.tagName === 'IMG') return el.getAttribute('src') || '';
   // For links, return href
   if (el.tagName === 'A') return el.getAttribute('href') || '';
+  // For datetime fields bound via Webflow, check for datetime attribute first
+  if (el.hasAttribute('datetime')) return el.getAttribute('datetime');
   return (el.textContent || '').trim();
+}
+
+// Parse Webflow date strings into Date objects.
+// Handles ISO ("2026-03-18T08:00:00.000Z") and human-readable ("March 18, 2026").
+function parseDate(str) {
+  if (!str) return null;
+  var d = new Date(str);
+  if (!isNaN(d.getTime())) return d;
+  return null;
 }
 
 // Switch/boolean fields use Webflow conditional visibility:
@@ -120,7 +131,11 @@ function readEventsFromDOM() {
     // Skip cancelled events
     if (status === 'Cancelled') return;
 
-    if (!name || !startStr) return;
+    // Parse dates
+    var startDate = parseDate(startStr);
+    if (!name || !startDate) return;
+    var endDate = parseDate(endStr);
+    var recurEndDate = parseDate(recurEnd);
 
     // Determine color from category
     const color = (category && CALENDAR_CONFIG.categoryColors[category])
@@ -150,14 +165,12 @@ function readEventsFromDOM() {
 
     // Recurring vs one-time
     if (isRecurring && frequency) {
-      const rruleStr = buildRRule(startStr, frequency, dayOfWeek, weekOfMonth, recurEnd);
+      const rruleStr = buildRRule(startDate.toISOString(), frequency, dayOfWeek, weekOfMonth, recurEndDate ? recurEndDate.toISOString() : null);
       if (rruleStr) {
         eventObj.rrule = rruleStr;
         // Duration for recurring events
-        if (endStr && !allDay) {
-          const startMs = new Date(startStr).getTime();
-          const endMs   = new Date(endStr).getTime();
-          const diffMs  = endMs - startMs;
+        if (endDate && !allDay) {
+          const diffMs = endDate.getTime() - startDate.getTime();
           if (diffMs > 0) {
             const hours   = Math.floor(diffMs / 3600000);
             const minutes = Math.floor((diffMs % 3600000) / 60000);
@@ -166,12 +179,12 @@ function readEventsFromDOM() {
         }
       } else {
         // Fallback: treat as one-time if RRULE build fails
-        eventObj.start = startStr;
-        if (endStr) eventObj.end = endStr;
+        eventObj.start = startDate.toISOString();
+        if (endDate) eventObj.end = endDate.toISOString();
       }
     } else {
-      eventObj.start = startStr;
-      if (endStr) eventObj.end = endStr;
+      eventObj.start = startDate.toISOString();
+      if (endDate) eventObj.end = endDate.toISOString();
     }
 
     // Detail page link (from <a> inside the item)
