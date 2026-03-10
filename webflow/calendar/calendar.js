@@ -90,10 +90,10 @@ function getField(item, fieldName) {
   return (el.textContent || '').trim();
 }
 
-function isTruthy(val) {
-  if (!val) return false;
-  const v = val.toLowerCase().trim();
-  return v === 'true' || v === 'yes' || v === '1';
+// Switch/boolean fields use Webflow conditional visibility:
+// Element present = true, element absent = false.
+function hasField(item, fieldName) {
+  return !!item.querySelector('[data-field="' + fieldName + '"]');
 }
 
 function readEventsFromDOM() {
@@ -104,8 +104,8 @@ function readEventsFromDOM() {
     const name        = getField(item, 'name');
     const startStr    = getField(item, 'start-date-time');
     const endStr      = getField(item, 'end-date-time');
-    const allDay      = isTruthy(getField(item, 'all-day-event'));
-    const isRecurring = isTruthy(getField(item, 'recurring'));
+    const allDay      = hasField(item, 'all-day-event');
+    const isRecurring = hasField(item, 'recurring');
     const frequency   = getField(item, 'frequency');
     const dayOfWeek   = getField(item, 'day-of-week');
     const weekOfMonth = getField(item, 'week-of-month');
@@ -115,13 +115,10 @@ function readEventsFromDOM() {
     const cost        = getField(item, 'cost');
     const heroImage   = getField(item, 'hero-image');
     const status      = getField(item, 'event-status');
-    const featured    = isTruthy(getField(item, 'featured-event'));
+    const featured    = hasField(item, 'featured-event');
 
     // Skip cancelled events
     if (status === 'Cancelled') return;
-    // Skip unpublished (if the publish field is present and false)
-    const publishVal = getField(item, 'publish-to-website');
-    if (publishVal && !isTruthy(publishVal)) return;
 
     if (!name || !startStr) return;
 
