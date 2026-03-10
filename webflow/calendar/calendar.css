@@ -38,16 +38,16 @@
   background-color: rgba(59, 130, 246, 0.05) !important;
 }
 
-/* Events — Block style */
+/* Events — Lincoln Center minimal text style */
 .fc-event {
   cursor: pointer;
-  border-radius: 4px;
-  padding: 3px 6px;
-  font-size: 0.75rem;
-  font-weight: 500;
+  background: transparent !important;
   border: none !important;
-  color: #fff !important;
-  display: block;
+  border-radius: 0;
+  padding: 2px 4px;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  margin-bottom: 1px;
 }
 .fc-daygrid-event {
   white-space: nowrap;
@@ -55,20 +55,29 @@
   text-overflow: ellipsis;
 }
 .fc-daygrid-dot-event {
-  background-color: var(--fc-event-bg-color, #6b7280);
-  color: #fff !important;
-  padding: 3px 6px;
-  border-radius: 4px;
+  background: transparent !important;
+  padding: 2px 4px;
+  border-bottom: 1px solid #e5e7eb;
 }
 .fc-daygrid-dot-event .fc-daygrid-event-dot {
-  display: none;
+  border-color: var(--fc-event-bg-color, #6b7280);
+  min-width: 6px;
+  height: 6px;
 }
 .fc-daygrid-dot-event .fc-event-time {
+  font-size: 0.7rem;
   font-weight: 600;
+  color: #6b7280;
+}
+.fc-daygrid-dot-event .fc-event-title {
+  font-weight: 500;
+  color: #111827;
 }
 .fc-event:hover {
-  opacity: 0.88;
-  filter: brightness(1.08);
+  background: #f9fafb !important;
+}
+.fc-event:hover .fc-event-title {
+  text-decoration: underline;
 }
 
 /* List view */

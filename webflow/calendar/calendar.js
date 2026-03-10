@@ -327,22 +327,10 @@ function initCalendar() {
         window.location.href = info.event.extendedProps.detailUrl;
       }
     },
-    eventDisplay: 'block',
     eventDidMount: function(info) {
-      // Force block style with category color
-      var bgColor = info.event.backgroundColor || CALENDAR_CONFIG.defaultColor;
-      info.el.style.backgroundColor = bgColor;
-      info.el.style.borderColor = bgColor;
-      info.el.style.color = '#fff';
-      info.el.style.borderRadius = '4px';
-      info.el.style.padding = '2px 5px';
-      // Hide dot if present
-      var dot = info.el.querySelector('.fc-daygrid-event-dot');
-      if (dot) dot.style.display = 'none';
       // Add featured styling
       if (info.event.extendedProps.featured) {
         info.el.style.fontWeight = 'bold';
-        info.el.style.borderLeft = '3px solid gold';
       }
     },
     height: 'auto',
