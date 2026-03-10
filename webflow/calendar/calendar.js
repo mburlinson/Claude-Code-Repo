@@ -319,6 +319,27 @@ function initCalendar() {
       right: CALENDAR_CONFIG.headerRight
     },
     events: events,
+    eventContent: function(arg) {
+      var props = arg.event.extendedProps;
+      var cat = props.category || '';
+      var catColor = (cat && CALENDAR_CONFIG.categoryColors[cat])
+        ? CALENDAR_CONFIG.categoryColors[cat]
+        : '';
+      var timeStr = '';
+      if (arg.event.start && !arg.event.allDay) {
+        timeStr = arg.event.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      }
+      var html = '<div class="fc-event-card">';
+      html += '<div class="fc-event-card-title">' + arg.event.title + '</div>';
+      if (cat) {
+        html += '<div class="fc-event-card-category" style="color:' + catColor + '">' + cat + '</div>';
+      }
+      if (timeStr) {
+        html += '<div class="fc-event-card-time">' + timeStr + '</div>';
+      }
+      html += '</div>';
+      return { html: html };
+    },
     eventClick: function(info) {
       info.jsEvent.preventDefault();
       if (CALENDAR_CONFIG.useModal) {
@@ -328,7 +349,6 @@ function initCalendar() {
       }
     },
     eventDidMount: function(info) {
-      // Add featured styling
       if (info.event.extendedProps.featured) {
         info.el.style.fontWeight = 'bold';
       }
