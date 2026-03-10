@@ -3,7 +3,7 @@
 
 /* Calendar container */
 #divCalendar {
-  max-width: 100%;
+  max-width: auto;
   margin: 0 auto;
   padding: 0 !important;
   font-family: inherit;
