@@ -329,7 +329,8 @@ function initCalendar() {
       if (arg.event.start && !arg.event.allDay) {
         timeStr = arg.event.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
       }
-      var html = '<div class="fc-event-card">';
+      var barColor = catColor || CALENDAR_CONFIG.defaultColor;
+      var html = '<div class="fc-event-card" style="--card-color:' + barColor + '">';
       html += '<div class="fc-event-card-title">' + arg.event.title + '</div>';
       if (cat) {
         html += '<div class="fc-event-card-category" style="color:' + catColor + '">' + cat + '</div>';

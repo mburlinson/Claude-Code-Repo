@@ -57,8 +57,9 @@
 
 /* Event card layout */
 .fc-event-card {
-  padding: 6px 8px;
+  padding: 6px 8px 6px 10px;
   line-height: 1.3;
+  border-left: 3px solid var(--card-color, #6b7280);
 }
 .fc-event-card-title {
   font-size: 0.8rem;
@@ -73,7 +74,7 @@
 }
 .fc-event-card-time {
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 400;
   color: #111827;
 }
 
