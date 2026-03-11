@@ -3,11 +3,15 @@
  * Inject: Site Settings → Custom Code → Before </body>
  * Wrap in: <script> ... </script>
  *
- * Reads Webflow CMS collection list items, hides the original list,
- * and rebuilds a grouped table board with filters, stats, and sort.
+ * Fetches all opportunities from the API webhook, then builds a
+ * grouped table board with filters, stats, and sort.
+ * Falls back to reading Webflow CMS DOM elements if API is unavailable.
  */
 (function () {
   'use strict';
+
+  /* ── Config ────────────────────────────────────────────── */
+  var API_URL = 'https://n8n.ifmm.com/webhook/oip-opportunities';
 
   /* ── Stage config ────────────────────────────────────────── */
   var STAGES_ORDER = [
@@ -50,19 +54,75 @@
     'Solution Design', 'Solution Approval', 'Proposal Development'
   ];
 
+  /* ── Reverse option maps (Webflow hex ID → display name) ── */
+  var STAGE_IDS = {
+    '178c5ad93e4b87fc67f9ad497de0a0c1': 'Discovered',
+    '356c258e17945268324b7175d2238285': 'Initial Qualification',
+    '208086e598c5f13be1007008bc1bd442': 'Bid/No-Bid Review',
+    '98d7b579738069478f1ae00f8aa8f3f3': 'Solution Design',
+    '095ccecb72a6ecd3577a6a2e322131fc': 'Solution Approval',
+    'b8b3f1efc4b45ec5a227e834b0a7d891': 'Proposal Development',
+    'e71de3a3ac709a9c40f499a48a373176': 'Internal Review',
+    '960cb3cc71d59d7a009c324b74400510': 'Submitted',
+    '8365382e5aae32cf7e01909f0de46e7d': 'Awarded',
+    '56a23f60a3f03b3a56f4960a8d4eaff0': 'Lost',
+    'cdbf97871a61b6c4ad174c6fcd501ef4': 'Archived'
+  };
+  var SOURCE_IDS = {
+    '2b4dce1bd9ea17f50aac656dd10f4b05': 'SAM.gov',
+    '14781c98fa19f89844c652759dcb593d': 'eVA',
+    'adb6fd7d8186b49e417156a5b0ca77b0': 'eMaryland',
+    '7846a47eb0e3af84303a8c27c75a8b9f': 'DC OCP',
+    '67137cd439a5e0bbbf470ade5d04a757': 'Cal eProcure',
+    'c83cf8da35b92e0116531ca8e7bf4cbf': 'NYS Contract Reporter',
+    'a2ac878e347bd848ce61680d6306bf28': 'TX ESBD',
+    'f4d8b43c1cffacd1e412c528e76bdc9e': 'University',
+    '0ec722289336a2011988d4dcb22485db': 'Transit Authority',
+    'e4f27fac1713bd08bc42929c6d6c55b0': 'Private Sector',
+    'c0939d2d5eb0b67bf723931a8498057b': 'Other',
+    'ad785c94ca76d0deaa800e8fcc456f66': 'OpenGov',
+    '6d2a4d1c4be828dd2dcb21abda2dc964': 'BidPrime'
+  };
+  var BUYER_TYPE_IDS = {
+    '7e3dc1b3385bc640862f27a46c75f4d2': 'Federal',
+    'e05c94d4366c7307a586f04def5a09ec': 'State',
+    'aea7a0930c58b8e5761e6696906978bc': 'Local',
+    '2970cf2231ecdb929030921807db1411': 'Quasi-Public',
+    '2ac72404472e0b198e3541e86360a119': 'Private'
+  };
+  var BID_DECISION_IDS = {
+    '7ec0f94a52b9662cc078ad18eaf16bb2': 'Bid',
+    'e196700a9cc0cada0f5cadabffbe5176': 'No-Bid',
+    'a6c3f8b6ee307e3a3168d51e8a168da7': 'Conditional'
+  };
+
   /* ── SVG icons ───────────────────────────────────────────── */
   var ICON_SEARCH = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="7" cy="7" r="5"/><line x1="11" y1="11" x2="15" y2="15"/></svg>';
   var ICON_CHEVRON = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l4 4-4 4"/></svg>';
   var ICON_EXTLINK = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 7v4a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h4"/><path d="M8 2h4v4"/><path d="M6 8L12 2"/></svg>';
 
-  /* ── Data extraction from page ─────────────────────────────── */
+  /* ── Data ───────────────────────────────────────────────── */
   var items = [];
 
-  function extractItems() {
-    // Look for cards in multiple ways:
-    // 1. data-oip="card" elements (Designer-built or HTML embed)
-    // 2. .w-dyn-item elements (CMS collection list)
-    // 3. .oip-card class elements
+  function mapApiItem(wfItem) {
+    var fd = wfItem.fieldData || {};
+    return {
+      el: null,
+      name: fd.name || 'Untitled',
+      stage: STAGE_IDS[fd.stage] || fd.stage || '',
+      source: SOURCE_IDS[fd.source] || fd.source || '',
+      buyerType: BUYER_TYPE_IDS[fd['buyer-type']] || fd['buyer-type'] || '',
+      score: parseInt(fd['bid-readiness-score'], 10) || 0,
+      deadline: fd['submission-deadline'] || '',
+      slug: fd.slug ? '/opportunities/' + fd.slug : '#',
+      sourceUrl: fd['source-url'] || '',
+      buyerName: fd['buyer-name'] || '',
+      fee: fd['estimated-fee'] || '',
+      bidDecision: BID_DECISION_IDS[fd['bid-decision']] || fd['bid-decision'] || ''
+    };
+  }
+
+  function extractItemsFromDom() {
     var cards = document.querySelectorAll('[data-oip="card"]');
     if (!cards.length) cards = document.querySelectorAll('.w-dyn-item [data-oip="card"], .w-dyn-item a');
     if (!cards.length) cards = document.querySelectorAll('.oip-card');
@@ -73,11 +133,9 @@
       var wrapper = card.closest('.w-dyn-item') || card.parentElement;
       var scope = wrapper || card;
 
-      // Helper: read from data attr first, then from child element by class
       function read(attrName, className) {
         var val = card.getAttribute(attrName);
         if (val && val.length < 40 && !/^[0-9a-f]{20,}$/i.test(val)) return val.trim();
-        // Fall back to text content from child element
         var el = scope.querySelector('.' + className);
         if (el) return el.textContent.trim();
         return '';
@@ -98,7 +156,6 @@
         bidDecision: ''
       };
 
-      // Extract extra fields from data-field attributes
       scope.querySelectorAll('[data-field]').forEach(function (f) {
         var key = f.getAttribute('data-field');
         var val = f.textContent.trim();
@@ -107,7 +164,6 @@
         if (key === 'bid-decision') data.bidDecision = val;
       });
 
-      // Also read from known class elements
       var bn = scope.querySelector('.oip-buyer-name');
       if (bn && !data.buyerName) data.buyerName = bn.textContent.trim();
       var fee = scope.querySelector('.oip-fee');
@@ -155,19 +211,16 @@
 
   /* ── Build Page ──────────────────────────────────────────── */
   function build() {
-    items = extractItems();
     if (!items.length) return;
 
-    // Hide ALL original page content (cards, old filters, old grid, etc.)
+    // Hide original page content
     document.querySelectorAll('[data-oip="list"], [data-oip="filters"], #oip-grid, #oip-stats, #oip-loading, .w-dyn-list').forEach(function(el) {
       el.style.display = 'none';
     });
-    // Also hide the parent containers of the original cards
     var firstCard = document.querySelector('[data-oip="card"]');
     if (firstCard) {
       var origContainer = firstCard.closest('[data-oip="list"]') || firstCard.closest('.w-dyn-list') || firstCard.closest('#oip-grid');
       if (origContainer) origContainer.style.display = 'none';
-      // Hide everything in the main content area except our new shell
       var mainSection = firstCard.closest('section') || firstCard.closest('[class*="section"]') || firstCard.closest('main');
       if (mainSection) mainSection.style.display = 'none';
     }
@@ -177,7 +230,6 @@
     if (!shell) {
       shell = document.createElement('div');
       shell.className = 'oip-shell';
-      // Insert at the top of body content
       var main = document.querySelector('main') || document.querySelector('[role="main"]');
       if (main) main.parentNode.insertBefore(shell, main);
       else document.body.insertBefore(shell, document.body.firstChild);
@@ -402,18 +454,36 @@
 
   /* ── Init ────────────────────────────────────────────────── */
   function init() {
+    // Try API first (returns all items, no 100-item cap)
+    fetch(API_URL)
+      .then(function (res) { return res.json(); })
+      .then(function (data) {
+        if (data && data.items && data.items.length > 0) {
+          items = data.items.map(mapApiItem);
+          build();
+        } else {
+          fallbackToDom();
+        }
+      })
+      .catch(function () {
+        fallbackToDom();
+      });
+  }
+
+  function fallbackToDom() {
     // Wait for CMS items to be in the DOM
     if (!document.querySelector('.w-dyn-item')) {
-      // Retry a few times in case of slow CMS render
       var attempts = 0;
       var timer = setInterval(function () {
         attempts++;
         if (document.querySelector('.w-dyn-item') || attempts > 20) {
           clearInterval(timer);
+          items = extractItemsFromDom();
           build();
         }
       }, 200);
     } else {
+      items = extractItemsFromDom();
       build();
     }
   }
