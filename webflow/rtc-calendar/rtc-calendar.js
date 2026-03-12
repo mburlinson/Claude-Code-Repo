@@ -115,7 +115,8 @@ function readEventsFromDOM() {
     const dayOfWeek   = getField(item, 'day-of-week');
     const weekOfMonth = getField(item, 'week-of-month');
     const recurEnd    = getField(item, 'recurrence-end-date');
-    const category    = getField(item, 'category');
+    const category    = getField(item, 'category-name') || getField(item, 'category');
+    const catColor    = getField(item, 'category-color');
     const summary     = getField(item, 'short-summary');
     const cost        = getField(item, 'cost');
     const heroImage   = getField(item, 'hero-image');
@@ -129,9 +130,10 @@ function readEventsFromDOM() {
     var endDate = parseDate(endStr);
     var recurEndDate = parseDate(recurEnd);
 
-    const color = (category && CALENDAR_CONFIG.categoryColors[category])
-      ? CALENDAR_CONFIG.categoryColors[category]
-      : CALENDAR_CONFIG.defaultColor;
+    // Use color from CMS category reference, fall back to hardcoded map
+    const color = catColor
+      || (category && CALENDAR_CONFIG.categoryColors[category] ? CALENDAR_CONFIG.categoryColors[category] : null)
+      || CALENDAR_CONFIG.defaultColor;
 
     const eventObj = {
       title: name,
@@ -141,6 +143,7 @@ function readEventsFromDOM() {
         summary: summary,
         cost: cost,
         category: category,
+        catColor: catColor || color,
         heroImage: heroImage,
         status: status,
         featured: featured
@@ -197,7 +200,7 @@ function showModal(info) {
   if (catEl) {
     if (props.category) {
       catEl.textContent = props.category;
-      catEl.style.backgroundColor = info.event.backgroundColor || CALENDAR_CONFIG.defaultColor;
+      catEl.style.backgroundColor = props.catColor || CALENDAR_CONFIG.defaultColor;
       catEl.style.display = '';
     } else {
       catEl.style.display = 'none';
@@ -297,9 +300,8 @@ function initCalendar() {
     eventContent: function(arg) {
       var props = arg.event.extendedProps;
       var cat = props.category || '';
-      var catColor = (cat && CALENDAR_CONFIG.categoryColors[cat])
-        ? CALENDAR_CONFIG.categoryColors[cat]
-        : '';
+      var catColor = props.catColor
+        || (cat && CALENDAR_CONFIG.categoryColors[cat] ? CALENDAR_CONFIG.categoryColors[cat] : '')
       var timeStr = '';
       if (arg.event.start && !arg.event.allDay) {
         timeStr = arg.event.start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
