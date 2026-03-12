@@ -1,0 +1,317 @@
+/* ============================================
+   RTC Interactive Map — Styles
+   Hosted on GitHub, served via jsDelivr CDN
+   ============================================ */
+
+/* --- Layout --- */
+.rtc-map-wrapper {
+  width: 100%;
+  font-family: 'Proxima Nova Soft', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #1a1a2e;
+}
+
+.rtc-map-section {
+  display: flex;
+  position: relative;
+  z-index: 2;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* --- Sidebar --- */
+.rtc-map-sidebar {
+  width: 300px;
+  min-width: 300px;
+  height: 750px;
+  background: #141c4d;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.rtc-sidebar-header {
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  flex-shrink: 0;
+}
+
+.rtc-sidebar-header h3 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.rtc-sidebar-header p {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.rtc-sidebar-search {
+  padding: 12px 20px;
+  flex-shrink: 0;
+}
+
+.rtc-sidebar-search input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.rtc-sidebar-search input::placeholder { color: rgba(255,255,255,0.4); }
+.rtc-sidebar-search input:focus { border-color: rgba(255,255,255,0.4); }
+
+.rtc-sidebar-list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 12px 20px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.2) transparent;
+}
+
+.rtc-sidebar-list::-webkit-scrollbar { width: 5px; }
+.rtc-sidebar-list::-webkit-scrollbar-track { background: transparent; }
+.rtc-sidebar-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
+
+.rtc-sidebar-group-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: rgba(255,255,255,0.4);
+  padding: 16px 8px 8px;
+  margin: 0;
+}
+
+.rtc-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  text-decoration: none;
+  color: #fff;
+}
+
+.rtc-sidebar-item:hover { background: rgba(255,255,255,0.08); }
+.rtc-sidebar-item.active { background: rgba(255,255,255,0.15); }
+.rtc-sidebar-item.filtered-out { display: none; }
+
+.rtc-sidebar-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.rtc-sidebar-dot.shop { background: #0278d4; }
+.rtc-sidebar-dot.dine { background: #df4661; }
+.rtc-sidebar-dot.entertainment { background: #01b2a9; }
+.rtc-sidebar-dot.services { background: #fdda24; }
+
+.rtc-sidebar-name {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- Map Container --- */
+.rtc-map-main {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  height: 750px;
+}
+
+#rtc-mapbox {
+  width: 100%;
+  height: 100%;
+}
+
+#rtc-mapbox .mapboxgl-ctrl-attrib { font-size: 10px; }
+
+/* --- Filter Bar --- */
+.rtc-filter-bar {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 5;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.rtc-filter-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 50px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fff;
+  color: #555;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.rtc-filter-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.18); }
+.rtc-filter-btn.active { color: #fff; }
+.rtc-filter-btn[data-filter="all"].active { background: #141c4d; color: #fff; }
+.rtc-filter-btn[data-filter="shop"].active { background: #0278d4; }
+.rtc-filter-btn[data-filter="dine"].active { background: #df4661; }
+.rtc-filter-btn[data-filter="entertainment"].active { background: #01b2a9; }
+.rtc-filter-btn[data-filter="services"].active { background: #fdda24; color: #333; }
+
+/* --- Legend --- */
+.rtc-legend {
+  position: absolute;
+  bottom: 32px;
+  left: 12px;
+  z-index: 5;
+  background: rgba(255,255,255,0.95);
+  padding: 10px 16px;
+  border-radius: 8px;
+  display: flex;
+  gap: 16px;
+  font-size: 11px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.rtc-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  color: #555;
+}
+
+.rtc-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* --- Custom Mapbox Markers --- */
+.rtc-marker {
+  width: 22px;
+  height: 28px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.rtc-marker:hover {
+  transform: scale(1.3) translateY(-4px);
+  z-index: 10 !important;
+}
+
+.rtc-marker.hidden {
+  display: none;
+}
+
+/* --- Mapbox Popup --- */
+.mapboxgl-popup-content {
+  border-radius: 10px !important;
+  padding: 0 !important;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.18) !important;
+  min-width: 220px;
+  overflow: hidden;
+}
+
+.mapboxgl-popup-close-button {
+  font-size: 18px;
+  color: #999;
+  padding: 4px 10px;
+  z-index: 2;
+}
+
+.rtc-popup {
+  padding: 16px 18px;
+}
+
+.rtc-popup-type {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.rtc-popup-type.shop { background: #e8f4fc; color: #0278d4; }
+.rtc-popup-type.dine { background: #fce8ec; color: #df4661; }
+.rtc-popup-type.entertainment { background: #e6f9f8; color: #01b2a9; }
+.rtc-popup-type.services { background: #fef9e4; color: #b89a00; }
+
+.rtc-popup h4 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.rtc-popup-address {
+  font-size: 12px;
+  color: #777;
+  margin: 0 0 4px;
+}
+
+.rtc-popup-phone {
+  font-size: 12px;
+  color: #777;
+  margin: 0 0 12px;
+}
+
+.rtc-popup-link {
+  display: inline-block;
+  background: #141c4d;
+  color: #fff;
+  text-decoration: none;
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.rtc-popup-link:hover { background: #1d2766; }
+
+/* --- Responsive --- */
+@media (max-width: 900px) {
+  .rtc-map-section { flex-direction: column; }
+  .rtc-map-sidebar {
+    width: 100%;
+    min-width: unset;
+    height: 240px;
+    min-height: 200px;
+  }
+  .rtc-map-main { height: 500px; }
+  .rtc-legend { display: none; }
+  .rtc-filter-btn { padding: 6px 12px; font-size: 11px; }
+}
+
+@media (max-width: 600px) {
+  .rtc-map-sidebar { height: 200px; }
+  .rtc-map-main { height: 400px; }
+  .rtc-filter-bar { gap: 4px; }
+  .rtc-filter-btn { padding: 5px 10px; font-size: 10px; }
+}
