@@ -1,0 +1,214 @@
+/* ============================================
+   RTC Event Calendar — Styles
+   Hosted on GitHub, served via jsDelivr CDN
+   ============================================ */
+
+/* Calendar container */
+#divCalendar {
+  max-width: auto;
+  margin: 0 auto;
+  padding: 0 !important;
+  font-family: 'Proxima Nova Soft', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #1a1a2e;
+}
+
+/* Toolbar styling */
+.fc .fc-toolbar-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #141c4d;
+}
+.fc .fc-button {
+  font-size: 0.875rem;
+  padding: 0.4em 0.8em;
+  border-radius: 6px;
+}
+.fc .fc-button-primary {
+  background-color: #141c4d;
+  border-color: #141c4d;
+}
+.fc .fc-button-primary:hover {
+  background-color: #1d2766;
+  border-color: #1d2766;
+}
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+  background-color: #0d1236;
+  border-color: #0d1236;
+}
+.fc .fc-button-primary:focus {
+  box-shadow: 0 0 0 0.2rem rgba(20, 28, 77, 0.35);
+}
+
+/* Day cells */
+.fc .fc-daygrid-day-number {
+  font-size: 0.875rem;
+  padding: 4px 8px;
+}
+.fc .fc-day-today {
+  background-color: rgba(2, 120, 212, 0.06) !important;
+}
+
+/* Events — card style */
+.fc-event {
+  cursor: pointer;
+  background: #f8f9fc !important;
+  border: none !important;
+  border-radius: 4px;
+  padding: 0 !important;
+  margin-bottom: 3px !important;
+  overflow: visible;
+}
+.fc-daygrid-event {
+  white-space: normal !important;
+}
+.fc-event:hover {
+  background: #eef0f7 !important;
+}
+
+/* Event card layout */
+.fc-event-card {
+  padding: 6px 8px 6px 10px;
+  line-height: 1.3;
+  border-left: 3px solid var(--card-color, #6b7280);
+}
+.fc-event-card-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 2px;
+}
+.fc-event-card-category {
+  font-size: 0.7rem;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+.fc-event-card-time {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #1a1a2e;
+}
+
+/* List view */
+.fc .fc-list-event-title a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* --- Event Modal --- */
+#eventModal {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 9999;
+  background: rgba(20, 28, 77, 0.55);
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 12px;
+  max-width: 520px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(20, 28, 77, 0.3);
+  position: relative;
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #9ca3af;
+  background: none;
+  border: none;
+  line-height: 1;
+  z-index: 1;
+}
+.modal-close:hover {
+  color: #141c4d;
+}
+
+#modalImage {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 12px 12px 0 0;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+#modalTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: #1a1a2e;
+}
+
+#modalCategory {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  padding: 3px 10px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+#modalDate {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+#modalCost {
+  font-size: 0.9rem;
+  color: #141c4d;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+#modalDescription {
+  font-size: 0.9rem;
+  color: #4b5563;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+#modalLink {
+  display: inline-block;
+  background: #141c4d;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+#modalLink:hover {
+  background: #1d2766;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+  .fc .fc-toolbar {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .fc .fc-toolbar-title {
+    font-size: 1.2rem;
+  }
+  .modal-content {
+    max-width: 100%;
+  }
+}
