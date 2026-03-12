@@ -80,7 +80,9 @@ function buildRRule(startDate, frequency, dayOfWeek, weekOfMonth, endDate) {
 
 // ── DOM Reader ─────────────────────────────────────────────────────
 function getField(item, fieldName) {
-  const el = item.querySelector('[data-field="' + fieldName + '"]');
+  // Try exact match first, then try with trailing space (Webflow Designer quirk)
+  var el = item.querySelector('[data-field="' + fieldName + '"]');
+  if (!el) el = item.querySelector('[data-field="' + fieldName + ' "]');
   if (!el) return '';
   if (el.tagName === 'IMG') return el.getAttribute('src') || '';
   if (el.tagName === 'A') return el.getAttribute('href') || '';
