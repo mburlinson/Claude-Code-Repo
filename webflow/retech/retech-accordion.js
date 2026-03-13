@@ -1,10 +1,13 @@
 document.addEventListener('DOMContentLoaded', function() {
   setTimeout(function() {
-    var firstToggle = document.querySelector('.faq-p .faq.w-dropdown-toggle');
-    var firstList = document.querySelector('.faq-p .faq-body-3.w-dropdown-list');
-    if (firstToggle && firstList) {
-      firstToggle.classList.add('w--open');
-      firstList.classList.add('w--open');
+    var firstDropdown = document.querySelector('.faq-p.w-dropdown');
+    if (!firstDropdown) return;
+    var toggle = firstDropdown.querySelector('.faq.w-dropdown-toggle');
+    var list = firstDropdown.querySelector('.faq-body-3.w-dropdown-list');
+    if (toggle && list) {
+      toggle.classList.add('w--open');
+      list.classList.add('w--open');
+      firstDropdown.style.height = 'auto';
     }
   }, 500);
 });
