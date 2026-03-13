@@ -20,7 +20,7 @@
   var IMG_HEIGHT = 2330;
 
   // Geo-calibrated overlay position (aligned with Mapbox buildings)
-  var MAP_CENTER = [-77.35922, 38.95690];
+  var MAP_CENTER = [-77.35924, 38.95692];
   var LNG_SPAN = 0.01260;
   var COS_LAT = Math.cos(MAP_CENTER[1] * Math.PI / 180);
   var LAT_SPAN = LNG_SPAN * COS_LAT * (IMG_HEIGHT / IMG_WIDTH);
