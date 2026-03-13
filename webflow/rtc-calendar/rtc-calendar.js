@@ -260,7 +260,9 @@ function showModal(info) {
   const addCalMenu = document.getElementById('addCalMenu');
   if (addCalBtn && addCalMenu) {
     addCalMenu.style.display = 'none';
+    addCalBtn.setAttribute('type', 'button');
     addCalBtn.onclick = function(e) {
+      e.preventDefault();
       e.stopPropagation();
       addCalMenu.style.display = addCalMenu.style.display === 'none' ? 'block' : 'none';
     };
