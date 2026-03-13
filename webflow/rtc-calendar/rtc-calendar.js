@@ -255,6 +255,75 @@ function showModal(info) {
     }
   }
 
+  // Add to Calendar dropdown
+  const addCalBtn = document.getElementById('modalAddCal');
+  const addCalMenu = document.getElementById('addCalMenu');
+  if (addCalBtn && addCalMenu) {
+    addCalMenu.style.display = 'none';
+    addCalBtn.onclick = function(e) {
+      e.stopPropagation();
+      addCalMenu.style.display = addCalMenu.style.display === 'none' ? 'block' : 'none';
+    };
+
+    var start = info.event.start;
+    var end = info.event.end || new Date(start.getTime() + 3600000);
+    var title = info.event.title;
+    var desc = props.summary || '';
+    var location = 'Reston Town Center, Reston, VA';
+
+    // Google Calendar
+    var gcalLink = document.getElementById('addCalGoogle');
+    if (gcalLink) {
+      var fmt = function(d) { return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''); };
+      gcalLink.href = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+        + '&text=' + encodeURIComponent(title)
+        + '&dates=' + fmt(start) + '/' + fmt(end)
+        + '&details=' + encodeURIComponent(desc)
+        + '&location=' + encodeURIComponent(location);
+      gcalLink.setAttribute('target', '_blank');
+    }
+
+    // Outlook Web
+    var outlookLink = document.getElementById('addCalOutlook');
+    if (outlookLink) {
+      outlookLink.href = 'https://outlook.live.com/calendar/0/action/compose?rru=addevent'
+        + '&subject=' + encodeURIComponent(title)
+        + '&startdt=' + start.toISOString()
+        + '&enddt=' + end.toISOString()
+        + '&body=' + encodeURIComponent(desc)
+        + '&location=' + encodeURIComponent(location);
+      outlookLink.setAttribute('target', '_blank');
+    }
+
+    // ICS download (Apple Calendar, etc.)
+    var icsLink = document.getElementById('addCalICS');
+    if (icsLink) {
+      var pad = function(n) { return n < 10 ? '0' + n : '' + n; };
+      var icsDate = function(d) {
+        return d.getUTCFullYear().toString()
+          + pad(d.getUTCMonth() + 1)
+          + pad(d.getUTCDate()) + 'T'
+          + pad(d.getUTCHours())
+          + pad(d.getUTCMinutes())
+          + pad(d.getUTCSeconds()) + 'Z';
+      };
+      var icsContent = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'BEGIN:VEVENT',
+        'DTSTART:' + icsDate(start),
+        'DTEND:' + icsDate(end),
+        'SUMMARY:' + title,
+        'DESCRIPTION:' + desc.replace(/\n/g, '\\n'),
+        'LOCATION:' + location,
+        'END:VEVENT',
+        'END:VCALENDAR'
+      ].join('\r\n');
+      icsLink.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(icsContent);
+      icsLink.setAttribute('download', title.replace(/[^a-zA-Z0-9]/g, '_') + '.ics');
+    }
+  }
+
   modal.style.display = 'flex';
 }
 

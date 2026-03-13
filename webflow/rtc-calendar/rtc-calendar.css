@@ -199,6 +199,54 @@
   background: #1d2766;
 }
 
+/* --- Add to Calendar --- */
+.add-cal-wrapper {
+  position: relative;
+  display: inline-block;
+  margin-left: 10px;
+}
+.add-cal-btn {
+  background: none;
+  color: #141c4d;
+  border: 1px solid #141c4d;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.add-cal-btn:hover {
+  background: #141c4d;
+  color: #fff;
+}
+.add-cal-menu {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  margin-bottom: 6px;
+  min-width: 180px;
+  z-index: 10;
+}
+.add-cal-menu a {
+  display: block;
+  padding: 10px 16px;
+  color: #1a1a2e;
+  text-decoration: none;
+  font-size: 0.85rem;
+  transition: background 0.15s;
+}
+.add-cal-menu a:hover {
+  background: #f3f4f6;
+}
+.add-cal-menu a:not(:last-child) {
+  border-bottom: 1px solid #f3f4f6;
+}
+
 /* --- Responsive --- */
 @media (max-width: 768px) {
   .fc .fc-toolbar {
