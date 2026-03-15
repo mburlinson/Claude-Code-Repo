@@ -91,7 +91,7 @@
     map = new mapboxgl.Map({
       container: 'rtc-mapbox',
       style: 'mapbox://styles/mapbox/light-v11',
-      center: [-77.35830, 38.95620],
+      center: [-77.35830, 38.95750],
       zoom: 15.8,
       minZoom: 15,
       maxZoom: 20,
