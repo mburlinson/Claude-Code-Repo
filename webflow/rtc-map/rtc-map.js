@@ -13,7 +13,7 @@
   mapboxgl.accessToken = 'pk.eyJ1IjoibWJ1cmxpbnNvbiIsImEiOiI4bjdrV2lNIn0.CS5vqafA7WiXnOXc1P85CA';
 
   // Building footprint overlay (PNG with transparent background)
-  var OVERLAY_URL = 'https://cdn.prod.website-files.com/698a40b1d4f260473b1b221a/69b439d71724c5ed1fad91b6_3_RTC%20overlay.png';
+  var OVERLAY_URL = 'https://cdn.prod.website-files.com/698a40b1d4f260473b1b221a/69b6f9a433e9bca539e6267c_4_RTC%20overlay%20(1).png';
 
   // Overlay image dimensions: 2325 x 2330 (nearly square)
   var IMG_WIDTH = 2325;
