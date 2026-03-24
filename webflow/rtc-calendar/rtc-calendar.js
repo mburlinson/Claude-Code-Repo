@@ -90,6 +90,19 @@ function getField(item, fieldName) {
   return (el.textContent || '').trim();
 }
 
+function getGalleryImages(item, fieldName) {
+  var el = item.querySelector('[data-field="' + fieldName + '"]');
+  if (!el) el = item.querySelector('[data-field="' + fieldName + ' "]');
+  if (!el) return [];
+  var imgs = el.querySelectorAll('img');
+  var srcs = [];
+  for (var i = 0; i < imgs.length; i++) {
+    var src = imgs[i].getAttribute('src') || '';
+    if (src) srcs.push(src);
+  }
+  return srcs;
+}
+
 function parseDate(str) {
   if (!str) return null;
   var d = new Date(str);
@@ -120,6 +133,7 @@ function readEventsFromDOM() {
     const summary     = getField(item, 'short-summary');
     const cost        = getField(item, 'cost');
     const heroImage   = getField(item, 'hero-image');
+    const galleryImgs = getGalleryImages(item, 'gallery-images');
     const status      = getField(item, 'event-status');
     const featured    = hasField(item, 'featured-event');
 
@@ -145,6 +159,7 @@ function readEventsFromDOM() {
         category: category,
         catColor: catColor || color,
         heroImage: heroImage,
+        galleryImages: galleryImgs,
         status: status,
         featured: featured
       }
@@ -237,8 +252,13 @@ function showModal(info) {
 
   const imgEl = document.getElementById('modalImage');
   if (imgEl) {
-    if (props.heroImage) {
-      imgEl.src = props.heroImage;
+    var imgSrc = props.heroImage;
+    if (props.galleryImages && props.galleryImages.length > 0) {
+      var idx = Math.floor(Math.random() * props.galleryImages.length);
+      imgSrc = props.galleryImages[idx];
+    }
+    if (imgSrc) {
+      imgEl.src = imgSrc;
       imgEl.style.display = '';
     } else {
       imgEl.style.display = 'none';
