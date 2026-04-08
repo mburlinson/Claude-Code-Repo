@@ -87,7 +87,7 @@
       source: "states",
       paint: {
         "fill-color": "#d12327",
-        "fill-opacity": 0.08
+        "fill-opacity": 0.03
       },
       filter: ["in", "STATE_NAME"].concat(serviceStates)
     });
