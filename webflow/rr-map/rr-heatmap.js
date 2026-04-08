@@ -67,7 +67,11 @@
     { name: "Annapolis", coords: [-76.4922, 38.9784] },
     { name: "Frederick", coords: [-77.4105, 39.4143] },
     { name: "Philadelphia", coords: [-75.1652, 39.9526] },
-    { name: "Wilmington", coords: [-75.5398, 39.7391] }
+    { name: "Wilmington", coords: [-75.5398, 39.7391] },
+    { name: "Richmond", coords: [-77.4360, 37.5407] },
+    { name: "Bethlehem", coords: [-75.3785, 40.6259] },
+    { name: "Harrisburg", coords: [-76.8867, 40.2732] },
+    { name: "Trenton", coords: [-74.7429, 40.2171] }
   ];
 
   // Service area states
