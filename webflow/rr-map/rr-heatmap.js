@@ -129,40 +129,40 @@
         // Weight by job count
         "heatmap-weight": [
           "interpolate", ["linear"], ["get", "weight"],
-          1, 0.3,
-          5, 0.6,
-          10, 0.8,
+          1, 0.5,
+          5, 0.8,
+          10, 0.95,
           18, 1
         ],
         // Intensity increases with zoom
         "heatmap-intensity": [
           "interpolate", ["linear"], ["zoom"],
-          5, 0.6,
-          9, 1.2
+          5, 1.0,
+          9, 1.8
         ],
         // Color ramp: transparent → brand red
         "heatmap-color": [
           "interpolate", ["linear"], ["heatmap-density"],
           0, "rgba(0,0,0,0)",
-          0.1, "rgba(209,35,39,0.05)",
-          0.3, "rgba(209,35,39,0.15)",
-          0.5, "rgba(209,35,39,0.30)",
-          0.7, "rgba(209,35,39,0.50)",
-          0.9, "rgba(209,35,39,0.70)",
-          1, "rgba(209,35,39,0.85)"
+          0.1, "rgba(209,35,39,0.12)",
+          0.3, "rgba(209,35,39,0.30)",
+          0.5, "rgba(209,35,39,0.50)",
+          0.7, "rgba(209,35,39,0.70)",
+          0.9, "rgba(209,35,39,0.85)",
+          1, "rgba(209,35,39,0.95)"
         ],
         // Radius in pixels
         "heatmap-radius": [
           "interpolate", ["linear"], ["zoom"],
-          5, 25,
-          7, 40,
-          9, 55
+          5, 30,
+          7, 50,
+          9, 65
         ],
         // Fade out at high zoom
         "heatmap-opacity": [
           "interpolate", ["linear"], ["zoom"],
-          7, 0.9,
-          10, 0.6
+          7, 0.95,
+          10, 0.7
         ]
       }
     });
