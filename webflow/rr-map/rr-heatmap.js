@@ -10,8 +10,8 @@
   var map = new mapboxgl.Map({
     container: "map",
     style: "mapbox://styles/mburlinson/cl2i3y87n005f14pgk4is3gex",
-    center: [-76.5, 39.2],
-    zoom: isMobile ? 5.0 : 6.0,
+    center: [-76.8, 39.0],
+    zoom: isMobile ? 5.5 : 6.5,
     scrollZoom: false,
     attributionControl: false
   });
