@@ -1,0 +1,33 @@
+# Environment & Credentials — NEVER commit
+.env
+.env.*
+*.env
+credentials.json
+token.json
+service_account*.json
+
+# Salesforce
+**/SF_*
+**/salesforce_backup*
+
+# API Keys & Tokens
+*.key
+*.pem
+*.p12
+
+# Client data
+**/data/randr/backups/
+**/data/randr/session-logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+.next/
+
+# Python
+__pycache__/
+*.pyc
+.tmp/
