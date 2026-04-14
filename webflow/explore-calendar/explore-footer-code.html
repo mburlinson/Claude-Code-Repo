@@ -1,0 +1,53 @@
+<!-- Explore! Calendar — FOOTER CODE
+     Paste into: Page Settings → Custom Code → Footer Code -->
+
+<!-- Client-specific config (customize categories/colors here) -->
+<script>
+window.CALENDAR_CONFIG = {
+  categoryColors: {
+    'Classes & Workshops':   '#00a7e1',
+    'Community Events':      '#d71635',
+    'Kids & Family':         '#45c5d6',
+    'Arts & Culture':        '#db1464',
+    'Fitness & Movement':    '#8b5cf6',
+    'Music & Entertainment': '#f97316',
+    'Seasonal & Holiday':    '#a16207',
+    'Mission Mobile':        '#d90246',
+    'Maker Space':           '#22c55e',
+    'Other':                 '#353538'
+  },
+  initialView: 'dayGridMonth',
+  headerRight: 'dayGridMonth,timeGridWeek,listMonth',
+  useModal: true,
+  defaultColor: '#353538'
+};
+</script>
+
+<!-- Calendar JS via jsDelivr CDN (update version tag after push) -->
+<script src="https://cdn.jsdelivr.net/gh/mburlinson/Claude-Code-Repo@v1.0.5/webflow/explore-calendar/explore-calendar.js"></script>
+
+<!-- Modal HTML (add as Embed element on the page, or build natively in Designer) -->
+<div id="eventModal">
+  <div class="modal-content">
+    <button id="modalClose" class="modal-close">&times;</button>
+    <img id="modalImage" src="" alt="Event image" />
+    <div class="modal-body">
+      <h3 id="modalTitle"></h3>
+      <span id="modalCategory"></span>
+      <p id="modalDate"></p>
+      <p id="modalCost"></p>
+      <p id="modalDescription"></p>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <a id="modalLink" href="#" target="_blank">View Details</a>
+        <div class="add-cal-wrapper">
+          <button id="modalAddCal" class="add-cal-btn" type="button">+ Add to Calendar</button>
+          <div id="addCalMenu" class="add-cal-menu" style="display:none;">
+            <a id="addCalGoogle" href="#" target="_blank">Google Calendar</a>
+            <a id="addCalOutlook" href="#" target="_blank">Outlook</a>
+            <a id="addCalICS" href="#">Apple / ICS Download</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
