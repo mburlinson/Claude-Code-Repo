@@ -1,0 +1,140 @@
+<!-- ════════════════════════════════════════════════════════════════════
+     Goose Creek Village — Calendar code drop-ins
+     Site:  www.goosecreekvillage.com  (638509fe04de4c0d1ceb82c2)
+     Page:  /events
+     CDN:   v1.0.6
+     ════════════════════════════════════════════════════════════════════ -->
+
+
+<!-- ──────────────────────────────────────────────────────────────────
+     BLOCK 1 — HEAD CODE
+     Paste into: /events → Page Settings → Custom Code → Head Code
+     ────────────────────────────────────────────────────────────────── -->
+
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.17/index.global.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/rrule@2.8.1/dist/es5/rrule.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fullcalendar/rrule@6.1.17/index.global.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/mburlinson/Claude-Code-Repo@v1.0.6/webflow/goose-calendar/goose-calendar.css" />
+
+
+<!-- ──────────────────────────────────────────────────────────────────
+     BLOCK 2 — FOOTER CODE
+     Paste into: /events → Page Settings → Custom Code → Footer Code
+     Includes: brand config, JS tag, and modal HTML.
+     ────────────────────────────────────────────────────────────────── -->
+
+<script>
+window.CALENDAR_CONFIG = {
+  categoryColors: {
+    'Sales & Promotions':   '#bc7f43',
+    'Live Music':           '#a04a3e',
+    'Food & Dining':        '#6b7d3e',
+    'Family & Kids':        '#ebac6e',
+    'Wellness & Fitness':   '#4a8c8e',
+    'Seasonal & Holiday':   '#8b3a2f',
+    'Community':            '#4a6c8c',
+    'Workshops & Classes':  '#c97f4f',
+    'Grand Openings':       '#6b3d6b',
+    'Other':                '#5c4024'
+  },
+  initialView: 'dayGridMonth',
+  headerRight: 'dayGridMonth,timeGridWeek,listMonth',
+  useModal: true,
+  defaultColor: '#5c4024',
+  location: 'Goose Creek Village, 43170 Southern Walk Plaza, Ashburn, VA 20148'
+};
+</script>
+
+<script src="https://cdn.jsdelivr.net/gh/mburlinson/Claude-Code-Repo@v1.0.6/webflow/goose-calendar/goose-calendar.js"></script>
+
+<div id="eventModal">
+  <div class="modal-content">
+    <button id="modalClose" class="modal-close">&times;</button>
+    <img id="modalImage" src="" alt="Event image" />
+    <div class="modal-body">
+      <h3 id="modalTitle"></h3>
+      <span id="modalCategory"></span>
+      <p id="modalDate"></p>
+      <p id="modalCost"></p>
+      <p id="modalDescription"></p>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <a id="modalLink" href="#" target="_blank">View Details</a>
+        <div class="add-cal-wrapper">
+          <button id="modalAddCal" class="add-cal-btn" type="button">+ Add to Calendar</button>
+          <div id="addCalMenu" class="add-cal-menu" style="display:none;">
+            <a id="addCalGoogle" href="#" target="_blank">Google Calendar</a>
+            <a id="addCalOutlook" href="#" target="_blank">Outlook</a>
+            <a id="addCalICS" href="#">Apple / ICS Download</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ──────────────────────────────────────────────────────────────────
+     BLOCK 3 — CALENDAR CONTAINER (drop on the page body)
+     Add a regular Embed Element to the /events page with this content,
+     OR add a plain <div> via a custom HTML embed at the spot you want
+     the calendar to render.
+     ────────────────────────────────────────────────────────────────── -->
+
+<div id="divCalendar"></div>
+
+
+<!-- ──────────────────────────────────────────────────────────────────
+     BLOCK 4 — HIDDEN CMS DATA LIST (reference markup)
+     This is the SHAPE the JS expects. Build it in Designer:
+
+       1. Add a Collection List, bind to "Calendar Events"
+       2. On the wrapper element add inline style:  display: none
+       3. Inside each Collection Item, add elements with the
+          Custom Attribute  data-field = <slug>  AND bind their text
+          (or image src) to the matching CMS field via Designer.
+       4. Wrap each item in a Link Block pointing to the detail page.
+
+     The HTML below shows EXACTLY what one rendered item should look
+     like after Webflow renders the bindings. Use it as a checklist.
+     ────────────────────────────────────────────────────────────────── -->
+
+<div id="eventsList" style="display:none;">
+  <div class="w-dyn-list">
+    <div role="list" class="w-dyn-items">
+
+      <!-- One of these per Calendar Event item -->
+      <div role="listitem" class="w-dyn-item">
+
+        <a href="/calendar-events/SLUG-FROM-CMS" data-field="detail-link"></a>
+
+        <div data-field="name">Event Name from CMS</div>
+        <div data-field="start-date-time">2026-05-09T19:00:00-04:00</div>
+        <div data-field="end-date-time">2026-05-09T22:00:00-04:00</div>
+        <div data-field="all-day-event">false</div>
+        <div data-field="recurring">false</div>
+        <div data-field="frequency"></div>
+        <div data-field="day-of-week"></div>
+        <div data-field="week-of-month"></div>
+        <div data-field="recurrence-end-date"></div>
+        <div data-field="category">Live Music</div>
+        <div data-field="short-summary">Short summary text from CMS.</div>
+        <div data-field="cost">Free entry</div>
+
+        <img data-field="hero-image" src="" alt="" />
+
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ──────────────────────────────────────────────────────────────────
+     NOTE on Webflow Custom Code editor wrapping
+     The script src URLs above are long. The Webflow editor sometimes
+     word-wraps long URLs and inserts whitespace, which silently breaks
+     them. After pasting, click each <script> / <link> line in the
+     editor and confirm the URL is on a SINGLE physical line with no
+     stray spaces. If it keeps mangling them, switch to the registered-
+     site-script approach via the Webflow Data API (data_scripts_tool).
+     ────────────────────────────────────────────────────────────────── -->
