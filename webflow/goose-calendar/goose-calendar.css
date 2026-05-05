@@ -6,9 +6,10 @@
    Hosted on GitHub, served via jsDelivr CDN
    ============================================ */
 
-/* Calendar container */
+/* Calendar container — fills its parent (Webflow section/container) */
 #divCalendar {
-  max-width: 1100px;
+  width: 100%;
+  max-width: 100%;
   margin: 0 auto;
   padding: 0 !important;
   font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
