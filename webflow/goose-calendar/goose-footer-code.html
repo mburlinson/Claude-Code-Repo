@@ -1,0 +1,54 @@
+<!-- Goose Creek Village Calendar — FOOTER CODE
+     Paste into: /events Page Settings → Custom Code → Footer Code -->
+
+<!-- Goose Creek Village calendar config -->
+<script>
+window.CALENDAR_CONFIG = {
+  categoryColors: {
+    'Sales & Promotions':   '#bc7f43',
+    'Live Music':           '#a04a3e',
+    'Food & Dining':        '#6b7d3e',
+    'Family & Kids':        '#ebac6e',
+    'Wellness & Fitness':   '#4a8c8e',
+    'Seasonal & Holiday':   '#8b3a2f',
+    'Community':            '#4a6c8c',
+    'Workshops & Classes':  '#c97f4f',
+    'Grand Openings':       '#6b3d6b',
+    'Other':                '#5c4024'
+  },
+  initialView: 'dayGridMonth',
+  headerRight: 'dayGridMonth,timeGridWeek,listMonth',
+  useModal: true,
+  defaultColor: '#5c4024',
+  location: 'Goose Creek Village, 43170 Southern Walk Plaza, Ashburn, VA 20148'
+};
+</script>
+
+<!-- Calendar JS via jsDelivr CDN (update version tag after push) -->
+<script src="https://cdn.jsdelivr.net/gh/mburlinson/Claude-Code-Repo@v1.0.6/webflow/goose-calendar/goose-calendar.js"></script>
+
+<!-- Modal HTML (add as Embed element on the page, or paste here) -->
+<div id="eventModal">
+  <div class="modal-content">
+    <button id="modalClose" class="modal-close">&times;</button>
+    <img id="modalImage" src="" alt="Event image" />
+    <div class="modal-body">
+      <h3 id="modalTitle"></h3>
+      <span id="modalCategory"></span>
+      <p id="modalDate"></p>
+      <p id="modalCost"></p>
+      <p id="modalDescription"></p>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <a id="modalLink" href="#" target="_blank">View Details</a>
+        <div class="add-cal-wrapper">
+          <button id="modalAddCal" class="add-cal-btn" type="button">+ Add to Calendar</button>
+          <div id="addCalMenu" class="add-cal-menu" style="display:none;">
+            <a id="addCalGoogle" href="#" target="_blank">Google Calendar</a>
+            <a id="addCalOutlook" href="#" target="_blank">Outlook</a>
+            <a id="addCalICS" href="#">Apple / ICS Download</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
