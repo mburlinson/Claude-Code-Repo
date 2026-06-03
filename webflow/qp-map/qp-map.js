@@ -121,10 +121,13 @@
   }
 
   function fitToPois() {
-    if (!POIS.length) return;
+    if (!POIS.length) { map.jumpTo({ center: [PROPERTY.lng, PROPERTY.lat], zoom: 14 }); return; }
     var b = new mapboxgl.LngLatBounds([PROPERTY.lng, PROPERTY.lat], [PROPERTY.lng, PROPERTY.lat]);
     POIS.forEach(function(p) { b.extend([p.lng, p.lat]); });
-    map.fitBounds(b, { padding: 60, maxZoom: 14, duration: 0 });
+    // Fit all POIs to get the natural zoom, then zoom in two levels, centered on Quantum Park.
+    var cam = map.cameraForBounds(b, { padding: 60, maxZoom: 14 });
+    var z = ((cam && typeof cam.zoom === 'number') ? cam.zoom : 12) + 2;
+    map.jumpTo({ center: [PROPERTY.lng, PROPERTY.lat], zoom: Math.min(z, 18) });
   }
 
   function openPopup(poi, lngLat) {
