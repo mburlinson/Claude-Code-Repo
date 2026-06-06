@@ -45,6 +45,17 @@ function buildRRule(startDate, frequency, dayOfWeek, weekOfMonth, endDate) {
     case 'Daily':
       rule += 'DAILY';
       break;
+    case 'Weekdays (Mon-Fri)':
+    case 'Weekdays (Mon–Fri)':
+    case 'Weekdays':
+      // Mon–Fri only — used for camps/programs that skip weekends
+      rule += 'WEEKLY;BYDAY=MO,TU,WE,TH,FR';
+      break;
+    case 'Weekends (Sat-Sun)':
+    case 'Weekends (Sat–Sun)':
+    case 'Weekends':
+      rule += 'WEEKLY;BYDAY=SA,SU';
+      break;
     case 'Weekly':
       rule += 'WEEKLY';
       if (dayOfWeek && DAY_MAP[dayOfWeek]) rule += ';BYDAY=' + DAY_MAP[dayOfWeek];

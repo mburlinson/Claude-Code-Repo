@@ -61,7 +61,7 @@ Site ID: 5632974a224fd5d015056fac
 | End Date/Time | `end-date-time` | DateTime | No | Null = 1hr default |
 | All Day Event | `all-day-event` | Switch | No | |
 | Recurring | `recurring` | Switch | No | |
-| Frequency | `frequency` | Option | No | Daily, Weekly, Bi-Weekly, Monthly, Yearly |
+| Frequency | `frequency` | Option | No | Daily, Weekdays (Mon-Fri), Weekends (Sat-Sun), Weekly, Bi-Weekly, Monthly, Yearly |
 | Day of Week | `day-of-week` | Option | No | Mon, Tue, Wed, Thu, Fri, Sat, Sun |
 | Week of Month | `week-of-month` | Option | No | 1st, 2nd, 3rd, 4th, Last |
 | Recurrence End Date | `recurrence-end-date` | DateTime | No | |
