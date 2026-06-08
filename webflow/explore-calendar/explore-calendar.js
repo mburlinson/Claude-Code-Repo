@@ -370,6 +370,15 @@ document.addEventListener('DOMContentLoaded', function() {
   var closeBtn  = document.getElementById('modalClose');
   var closeBtn2 = document.getElementById('modalCloseBtn');
   var modalBg   = document.getElementById('eventModal');
+
+  // Portal the modal to <body> so it escapes any Webflow ancestor stacking
+  // context (a transformed / sticky / z-indexed section wrapping the Embed).
+  // Without this, z-index alone can't lift the modal above later-painted
+  // sections like "Featured Events" — they punch through over the modal.
+  if (modalBg && modalBg.parentNode !== document.body) {
+    document.body.appendChild(modalBg);
+  }
+
   if (closeBtn)  closeBtn.addEventListener('click', hideModal);
   if (closeBtn2) closeBtn2.addEventListener('click', hideModal);
   if (modalBg)   modalBg.addEventListener('click', function(e) {
