@@ -133,7 +133,7 @@
   function openPopup(poi, lngLat) {
     if (activePopup) activePopup.remove();
     var addr = poi.address ? '<p class="qp-popup-address">' + escapeHtml(poi.address) + '</p>' : '';
-    var dir = 'https://www.google.com/maps/dir/?api=1&destination=' + poi.lat + ',' + poi.lng;
+    var dir = 'https://www.google.com/maps/dir/?api=1&origin=' + PROPERTY.lat + ',' + PROPERTY.lng + '&destination=' + poi.lat + ',' + poi.lng;
     var html = '<div class="qp-popup">' +
       '<span class="qp-popup-type" style="background:' + colorFor(poi.category) + '">' + escapeHtml(poi.category) + '</span>' +
       '<h4>' + escapeHtml(poi.name) + '</h4>' + addr +
