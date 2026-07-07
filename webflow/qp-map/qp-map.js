@@ -99,12 +99,17 @@
     var el = document.createElement('div');
     el.className = 'qp-anchor';
     el.style.backgroundImage = 'url("' + ANCHOR_SVG + '")';
+    // closeOnClick:false keeps the Quantum Park label pinned above its marker even
+    // when the user clicks the map or opens a POI popup elsewhere.
+    var anchorPopup = new mapboxgl.Popup({ offset: [0, -34], closeOnClick: false }).setHTML(
+      '<div class="qp-popup"><span class="qp-popup-type" style="background:#68a73b">Quantum Park</span><h4>' +
+      escapeHtml(PROPERTY.name) + '</h4><p class="qp-popup-address">22001 Loudoun County Parkway, Ashburn, VA</p></div>');
     new mapboxgl.Marker({ element: el, anchor: 'bottom' })
       .setLngLat([PROPERTY.lng, PROPERTY.lat])
-      .setPopup(new mapboxgl.Popup({ offset: [0, -34] }).setHTML(
-        '<div class="qp-popup"><span class="qp-popup-type" style="background:#68a73b">Quantum Park</span><h4>' +
-        escapeHtml(PROPERTY.name) + '</h4><p class="qp-popup-address">22001 Loudoun County Parkway, Ashburn, VA</p></div>'))
+      .setPopup(anchorPopup)
       .addTo(map);
+    // Open the popup on render so Quantum Park is labeled by default.
+    anchorPopup.setLngLat([PROPERTY.lng, PROPERTY.lat]).addTo(map);
   }
 
   function addMarkers() {
