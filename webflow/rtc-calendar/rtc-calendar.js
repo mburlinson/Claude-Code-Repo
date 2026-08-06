@@ -202,6 +202,139 @@ function readEventsFromDOM() {
   return events;
 }
 
+// ── Featured Strip Date Fix ────────────────────────────────────────
+
+/**
+ * Returns a Date at midnight local time today, suitable for rrule.after()
+ * comparison (rrule expands to local midnight occurrences for all-day events).
+ */
+function startOfTodayLocal() {
+  var d = new Date();
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+/**
+ * Given an event object (from readEventsFromDOM), compute the next occurrence
+ * on or after today. Returns a Date, or null if the series has ended / no rrule.
+ * For non-recurring events, parses eventObj.start directly.
+ */
+function computeNextOccurrence(eventObj) {
+  if (typeof rrule === 'undefined') return null;
+
+  if (eventObj.rrule) {
+    try {
+      var ruleSet = rrule.rrulestr(eventObj.rrule);
+      var anchor = startOfTodayLocal();
+      // inclusive: true means "on or after" anchor
+      var next = ruleSet.after(anchor, true);
+      return next || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  if (eventObj.start) {
+    var d = new Date(eventObj.start);
+    return isNaN(d.getTime()) ? null : d;
+  }
+
+  return null;
+}
+
+/**
+ * Rewrites the date text on any featured-strip cards whose linked event is
+ * recurring and has a future occurrence. Re-sorts card nodes ascending by date.
+ * Any failure leaves the DOM untouched.
+ *
+ * @param {Array} events - output of readEventsFromDOM()
+ */
+function fixFeaturedStripDates(events) {
+  var cards = document.querySelectorAll('.collection-item-55');
+  if (!cards || cards.length === 0) return;
+
+  // Build a lookup: detailUrl path → event
+  var urlMap = {};
+  for (var i = 0; i < events.length; i++) {
+    var ev = events[i];
+    var url = ev.extendedProps && ev.extendedProps.detailUrl;
+    if (url) {
+      // Normalize: strip trailing slash, lowercase
+      var key = url.replace(/\/$/, '').toLowerCase();
+      urlMap[key] = ev;
+    }
+  }
+
+  // Collect card data for sort; track parent so we can re-insert
+  var cardData = [];
+  var parent = null;
+
+  for (var c = 0; c < cards.length; c++) {
+    var card = cards[c];
+    if (!parent) parent = card.parentNode;
+
+    var linkEl = card.querySelector('a[href]');
+    var dateEl = card.querySelector('[fs-list-field="date"]');
+
+    if (!linkEl || !dateEl) {
+      cardData.push({ node: card, sortDate: null });
+      continue;
+    }
+
+    var href = linkEl.getAttribute('href') || '';
+    var hrefKey = href.replace(/\/$/, '').toLowerCase();
+    var eventObj = urlMap[hrefKey];
+
+    var sortDate = null;
+
+    if (eventObj && eventObj.rrule) {
+      // Recurring event: compute next occurrence
+      var nextDate = computeNextOccurrence(eventObj);
+      if (nextDate) {
+        // Rewrite the visible date text
+        var formatted = nextDate.toLocaleDateString('en-US', {
+          month: 'long', day: 'numeric', year: 'numeric'
+        });
+        dateEl.textContent = formatted;
+        sortDate = nextDate;
+      } else {
+        // Series ended — parse the existing (possibly stale) display date for sort
+        sortDate = parseDateText(dateEl.textContent);
+      }
+    } else {
+      // Non-recurring or unmatched: parse existing date for sort only
+      sortDate = parseDateText(dateEl.textContent);
+    }
+
+    cardData.push({ node: card, sortDate: sortDate });
+  }
+
+  // Re-sort ascending by date; cards with no parseable date go last
+  cardData.sort(function(a, b) {
+    if (!a.sortDate && !b.sortDate) return 0;
+    if (!a.sortDate) return 1;
+    if (!b.sortDate) return -1;
+    return a.sortDate.getTime() - b.sortDate.getTime();
+  });
+
+  // Reorder in DOM — appendChild moves nodes without cloning (preserves IX2/listeners)
+  if (parent) {
+    for (var j = 0; j < cardData.length; j++) {
+      parent.appendChild(cardData[j].node);
+    }
+  }
+}
+
+/**
+ * Parse a display date string like "August 8, 2026" into a Date.
+ * Returns null on failure.
+ */
+function parseDateText(text) {
+  if (!text) return null;
+  var d = new Date(text);
+  return isNaN(d.getTime()) ? null : d;
+}
+
 // ── Modal ──────────────────────────────────────────────────────────
 function showModal(info) {
   const props = info.event.extendedProps;
@@ -367,18 +500,31 @@ document.addEventListener('DOMContentLoaded', function() {
 
   if (window.fsAttributes && window.fsAttributes.push) {
     window.fsAttributes.push(['cmsload', function() {
-      initCalendar();
+      initAll();
     }]);
   } else {
-    initCalendar();
+    initAll();
   }
 });
 
-function initCalendar() {
+/**
+ * Top-level init: reads events once, runs the featured strip fix, then
+ * initializes the FullCalendar. The strip fix is isolated in its own
+ * try/catch so any failure there cannot break the calendar.
+ */
+function initAll() {
+  var events = readEventsFromDOM();
+  try {
+    fixFeaturedStripDates(events);
+  } catch (e) {
+    // Strip fix failure is non-fatal — calendar still renders
+  }
+  initCalendarWith(events);
+}
+
+function initCalendarWith(events) {
   var calendarEl = document.getElementById('divCalendar');
   if (!calendarEl) return;
-
-  var events = readEventsFromDOM();
 
   var calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: CALENDAR_CONFIG.initialView,
