@@ -1,0 +1,49 @@
+<!-- Do The Most Good Calendar — FOOTER CODE
+     Paste into: Page Settings → Custom Code → Footer Code -->
+
+<!-- Client-specific config (customize categories/colors here) -->
+<script>
+window.CALENDAR_CONFIG = {
+  categoryColors: {
+    'Elections':   '#99cffe',
+    'Community':   '#5fee82',
+    'Fundraising': '#7ed4ea',
+    'Canvassing':  '#ff4401',
+    'Other':       '#6b7280'
+  },
+  initialView: 'dayGridMonth',
+  headerRight: 'dayGridMonth,timeGridWeek,listMonth',
+  useModal: true,
+  defaultColor: '#389bb4',
+  location: 'Montgomery County, MD'
+};
+</script>
+
+<!-- Calendar JS via jsDelivr CDN (pinned to v1.0.10) -->
+<script src="https://cdn.jsdelivr.net/gh/mburlinson/Claude-Code-Repo@v1.0.10/webflow/dtmg-calendar/dtmg-calendar.js"></script>
+
+<!-- Modal HTML (add as Embed element on the page, or build natively in Designer) -->
+<div id="eventModal">
+  <div class="modal-content">
+    <button id="modalClose" class="modal-close">&times;</button>
+    <img id="modalImage" src="" alt="Event image" />
+    <div class="modal-body">
+      <h3 id="modalTitle"></h3>
+      <span id="modalCategory"></span>
+      <p id="modalDate"></p>
+      <p id="modalCost"></p>
+      <p id="modalDescription"></p>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <a id="modalLink" href="#" target="_blank">View Details</a>
+        <div class="add-cal-wrapper">
+          <button id="modalAddCal" class="add-cal-btn" type="button">+ Add to Calendar</button>
+          <div id="addCalMenu" class="add-cal-menu" style="display:none;">
+            <a id="addCalGoogle" href="#" target="_blank">Google Calendar</a>
+            <a id="addCalOutlook" href="#" target="_blank">Outlook</a>
+            <a id="addCalICS" href="#">Apple / ICS Download</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
