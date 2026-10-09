@@ -110,6 +110,12 @@ function parseDate(str) {
   return null;
 }
 
+// Category colors come from CMS text and are written into a style attribute,
+// so only accept plain color values (hex, rgb/hsl, or a color keyword).
+function safeColor(value) {
+  return /^(#[0-9a-f]{3,8}|(rgb|hsl)a?\([\d\s.,%deg]+\)|[a-z]+)$/i.test(value) ? value : '';
+}
+
 function hasField(item, fieldName) {
   return !!item.querySelector('[data-field="' + fieldName + '"]');
 }
@@ -129,7 +135,7 @@ function readEventsFromDOM() {
     const weekOfMonth = getField(item, 'week-of-month');
     const recurEnd    = getField(item, 'recurrence-end-date');
     const category    = getField(item, 'category-name') || getField(item, 'category');
-    const catColor    = getField(item, 'category-color');
+    const catColor    = safeColor(getField(item, 'category-color'));
     const summary     = getField(item, 'short-summary');
     const cost        = getField(item, 'cost');
     const heroImage   = getField(item, 'hero-image');
