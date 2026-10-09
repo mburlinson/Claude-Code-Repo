@@ -78,10 +78,80 @@
   color: #111827;
 }
 
-/* List view */
+/* Week (time-grid) view: the box height is the event's duration, so keep
+   the card inside it instead of spilling over the next event */
+.fc .fc-timegrid-slot {
+  height: 2em;
+}
+.fc .fc-timegrid-event.fc-event {
+  overflow: hidden;
+}
+.fc-event-card--timegrid {
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 3px 6px 3px 8px;
+}
+.fc-event-card-clamp {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  color: #111827;
+}
+.fc-timegrid-event-short .fc-event-card-clamp {
+  -webkit-line-clamp: 1;
+}
+.fc-event-card-clamp .fc-event-card-title,
+.fc-event-card-clamp .fc-event-card-time {
+  display: inline;
+  margin: 0;
+  font-size: inherit;
+}
+
+/* List view: the dot and time column already carry color and time */
 .fc .fc-list-event-title a {
   color: inherit;
   text-decoration: none;
+}
+.fc-event-card--list {
+  padding: 0;
+  border-left: none;
+}
+.fc-event-card--list .fc-event-card-title {
+  font-size: 0.9rem;
+}
+.fc-event-card--list .fc-event-card-category {
+  font-size: 0.75rem;
+  margin-bottom: 0;
+}
+
+/* Phone month grid: one-line colored bars (tap opens the event) */
+.fc-phone .fc-daygrid-event {
+  white-space: nowrap !important;
+  margin-bottom: 2px !important;
+}
+.fc-phone .fc-daygrid-event .fc-event-card {
+  padding: 2px 3px 2px 4px;
+  border-left-width: 2px;
+  min-width: 0;
+}
+.fc-phone .fc-daygrid-event .fc-event-card-title {
+  font-size: 0.65rem;
+  font-weight: 600;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fc-phone .fc-daygrid-event .fc-event-card-category,
+.fc-phone .fc-daygrid-event .fc-event-card-time {
+  display: none;
+}
+.fc-phone .fc-daygrid-day-number {
+  font-size: 0.75rem;
+  padding: 2px 4px;
 }
 
 /* ── Event Modal ──────────────────────────────────── */
@@ -102,25 +172,43 @@
   max-width: 520px;
   width: 100%;
   max-height: 90vh;
+  max-height: 90dvh;
   overflow-y: auto;
+  overscroll-behavior: contain;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
   position: relative;
 }
 
+/* 44px touch target with its own backing so it reads over any photo */
 .modal-close {
   position: absolute;
-  top: 12px;
-  right: 16px;
-  font-size: 1.5rem;
+  top: 10px;
+  right: 10px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 1.75rem;
   cursor: pointer;
-  color: #9ca3af;
-  background: none;
+  color: #374151;
+  background: rgba(255, 255, 255, 0.92);
   border: none;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
   line-height: 1;
   z-index: 1;
 }
 .modal-close:hover {
-  color: #374151;
+  color: #111827;
+  background: #fff;
+}
+
+/* Page behind the open modal doesn't scroll */
+html.cal-modal-open,
+html.cal-modal-open body {
+  overflow: hidden;
 }
 
 #modalImage {
@@ -188,10 +276,16 @@
 }
 
 /* ── Responsive ───────────────────────────────────── */
-@media (max-width: 768px) {
+/* Phones: nav + view buttons share the first row, title sits below */
+@media (max-width: 767px) {
   .fc .fc-toolbar {
-    flex-direction: column;
+    flex-wrap: wrap;
     gap: 8px;
+  }
+  .fc .fc-toolbar-chunk:nth-child(2) {
+    order: 3;
+    width: 100%;
+    text-align: center;
   }
   .fc .fc-toolbar-title {
     font-size: 1.2rem;
