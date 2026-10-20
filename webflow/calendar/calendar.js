@@ -135,6 +135,8 @@ function readEventsFromDOM() {
     const category    = getField(item, 'category');
     const summary     = getField(item, 'short-summary');
     const cost        = getField(item, 'cost');
+    const ageGroup    = getField(item, 'age-group');
+    const facilitator = getField(item, 'facilitator');
     const heroImage   = getField(item, 'hero-image');
     const status      = getField(item, 'event-status');
     const featured    = hasField(item, 'featured-event');
@@ -161,6 +163,8 @@ function readEventsFromDOM() {
       extendedProps: {
         summary: summary,
         cost: cost,
+        ageGroup: ageGroup,
+        facilitator: facilitator,
         category: category,
         heroImage: heroImage,
         status: status,
@@ -256,6 +260,28 @@ function showModal(info) {
       costEl.style.display = '';
     } else {
       costEl.style.display = 'none';
+    }
+  }
+
+  // Age Group
+  const ageGroupEl = document.getElementById('modalAgeGroup');
+  if (ageGroupEl) {
+    if (props.ageGroup) {
+      ageGroupEl.textContent = props.ageGroup;
+      ageGroupEl.style.display = '';
+    } else {
+      ageGroupEl.style.display = 'none';
+    }
+  }
+
+  // Facilitator
+  const facilitatorEl = document.getElementById('modalFacilitator');
+  if (facilitatorEl) {
+    if (props.facilitator) {
+      facilitatorEl.textContent = props.facilitator;
+      facilitatorEl.style.display = '';
+    } else {
+      facilitatorEl.style.display = 'none';
     }
   }
 
