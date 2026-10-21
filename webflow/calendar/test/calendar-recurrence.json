@@ -1,0 +1,340 @@
+[
+  {
+    "name": "(a) R.O.Y.A.L. VOICES: weekly Wed 1:00 PM, eight Wednesdays across the Nov 1 DST change",
+    "timeZone": "America/New_York",
+    "schedule": {
+      "start": "2026-10-28T17:00:00.000Z",
+      "end": "2026-10-28T18:15:00.000Z",
+      "allDay": false,
+      "recurring": true,
+      "frequency": "Weekly",
+      "dayOfWeek": "Wed",
+      "weekOfMonth": null,
+      "recurrenceEnd": "2026-12-16T19:15:00.000Z"
+    },
+    "expectedKeys": [
+      "2026-10-28T13:00",
+      "2026-11-04T13:00",
+      "2026-11-11T13:00",
+      "2026-11-18T13:00",
+      "2026-11-25T13:00",
+      "2026-12-02T13:00",
+      "2026-12-09T13:00",
+      "2026-12-16T13:00"
+    ]
+  },
+  {
+    "name": "(b) Play Lab: weekly Fri 3:45 PM, end day Dec 18 is inclusive though the stored end time is noon",
+    "timeZone": "America/New_York",
+    "schedule": {
+      "start": "2026-10-30T19:45:00.000Z",
+      "end": "2026-10-30T21:00:00.000Z",
+      "allDay": false,
+      "recurring": true,
+      "frequency": "Weekly",
+      "dayOfWeek": "Fri",
+      "weekOfMonth": null,
+      "recurrenceEnd": "2026-12-18T17:00:00.000Z"
+    },
+    "expectedKeys": [
+      "2026-10-30T15:45",
+      "2026-11-06T15:45",
+      "2026-11-13T15:45",
+      "2026-11-20T15:45",
+      "2026-11-27T15:45",
+      "2026-12-04T15:45",
+      "2026-12-11T15:45",
+      "2026-12-18T15:45"
+    ]
+  },
+  {
+    "name": "(c) Weekdays (Mon-Fri) 9:00 AM over two weeks, weekend skipped",
+    "timeZone": "America/New_York",
+    "schedule": {
+      "start": "2026-11-09T14:00:00.000Z",
+      "end": "2026-11-09T17:00:00.000Z",
+      "allDay": false,
+      "recurring": true,
+      "frequency": "Weekdays (Mon-Fri)",
+      "dayOfWeek": null,
+      "weekOfMonth": null,
+      "recurrenceEnd": "2026-11-20T14:00:00.000Z"
+    },
+    "expectedKeys": [
+      "2026-11-09T09:00",
+      "2026-11-10T09:00",
+      "2026-11-11T09:00",
+      "2026-11-12T09:00",
+      "2026-11-13T09:00",
+      "2026-11-16T09:00",
+      "2026-11-17T09:00",
+      "2026-11-18T09:00",
+      "2026-11-19T09:00",
+      "2026-11-20T09:00"
+    ]
+  },
+  {
+    "name": "(d) Weekends (Sat-Sun) 10:00 AM for three weekends",
+    "timeZone": "America/New_York",
+    "schedule": {
+      "start": "2026-11-07T15:00:00.000Z",
+      "end": "2026-11-07T16:30:00.000Z",
+      "allDay": false,
+      "recurring": true,
+      "frequency": "Weekends (Sat-Sun)",
+      "dayOfWeek": null,
+      "weekOfMonth": null,
+      "recurrenceEnd": "2026-11-22T15:00:00.000Z"
+    },
+    "expectedKeys": [
+      "2026-11-07T10:00",
+      "2026-11-08T10:00",
+      "2026-11-14T10:00",
+      "2026-11-15T10:00",
+      "2026-11-21T10:00",
+      "2026-11-22T10:00"
+    ]
+  },
+  {
+    "name": "(e) Bi-Weekly Tue 6:00 PM, every other Tuesday across the Nov 1 DST change",
+    "timeZone": "America/New_York",
+    "schedule": {
+      "start": "2026-09-15T22:00:00.000Z",
+      "end": "2026-09-15T23:00:00.000Z",
+      "allDay": false,
+      "recurring": true,
+      "frequency": "Bi-Weekly",
+      "dayOfWeek": "Tue",
+      "weekOfMonth": null,
+      "recurrenceEnd": "2026-11-24T23:00:00.000Z"
+    },
+    "expectedKeys": [
+      "2026-09-15T18:00",
+      "2026-09-29T18:00",
+      "2026-10-13T18:00",
+      "2026-10-27T18:00",
+      "2026-11-10T18:00",
+      "2026-11-24T18:00"
+    ]
+  },
+  {
+    "name": "(f) Monthly 3rd Thu 7:00 PM, across both the Nov 2026 and Mar 2027 DST changes",
+    "timeZone": "America/New_York",
+    "schedule": {
+      "start": "2026-10-15T23:00:00.000Z",
+      "end": "2026-10-16T00:30:00.000Z",
+      "allDay": false,
+      "recurring": true,
+      "frequency": "Monthly",
+      "dayOfWeek": "Thu",
+      "weekOfMonth": "3rd",
+      "recurrenceEnd": "2027-03-18T23:00:00.000Z"
+    },
+    "expectedKeys": [
+      "2026-10-15T19:00",
+      "2026-11-19T19:00",
+      "2026-12-17T19:00",
+      "2027-01-21T19:00",
+      "2027-02-18T19:00",
+      "2027-03-18T19:00"
+    ]
+  },
+  {
+    "name": "(g) Monthly Last Fri 5:30 PM",
+    "timeZone": "America/New_York",
+    "schedule": {
+      "start": "2026-09-25T21:30:00.000Z",
+      "end": "2026-09-25T23:00:00.000Z",
+      "allDay": false,
+      "recurring": true,
+      "frequency": "Monthly",
+      "dayOfWeek": "Fri",
+      "weekOfMonth": "Last",
+      "recurrenceEnd": "2027-01-31T17:00:00.000Z"
+    },
+    "expectedKeys": [
+      "2026-09-25T17:30",
+      "2026-10-30T17:30",
+      "2026-11-27T17:30",
+      "2026-12-25T17:30",
+      "2027-01-29T17:30"
+    ]
+  },
+  {
+    "name": "(h) Monthly with no day: day-of-month 31, months without a 31st are skipped (rrule default)",
+    "timeZone": "America/New_York",
+    "schedule": {
+      "start": "2026-10-31T14:00:00.000Z",
+      "end": "2026-10-31T15:00:00.000Z",
+      "allDay": false,
+      "recurring": true,
+      "frequency": "Monthly",
+      "dayOfWeek": null,
+      "weekOfMonth": null,
+      "recurrenceEnd": "2027-06-15T14:00:00.000Z"
+    },
+    "expectedKeys": [
+      "2026-10-31T10:00",
+      "2026-12-31T10:00",
+      "2027-01-31T10:00",
+      "2027-03-31T10:00",
+      "2027-05-31T10:00"
+    ]
+  },
+  {
+    "name": "(i) Yearly Dec 5 10:00 AM through 2029",
+    "timeZone": "America/New_York",
+    "schedule": {
+      "start": "2026-12-05T15:00:00.000Z",
+      "end": "2026-12-05T17:00:00.000Z",
+      "allDay": false,
+      "recurring": true,
+      "frequency": "Yearly",
+      "dayOfWeek": null,
+      "weekOfMonth": null,
+      "recurrenceEnd": "2029-12-31T17:00:00.000Z"
+    },
+    "expectedKeys": [
+      "2026-12-05T10:00",
+      "2027-12-05T10:00",
+      "2028-12-05T10:00",
+      "2029-12-05T10:00"
+    ]
+  },
+  {
+    "name": "(j) Daily 9:00 AM with UNTIL, across the Nov 1 DST change",
+    "timeZone": "America/New_York",
+    "schedule": {
+      "start": "2026-10-30T13:00:00.000Z",
+      "end": "2026-10-30T16:00:00.000Z",
+      "allDay": false,
+      "recurring": true,
+      "frequency": "Daily",
+      "dayOfWeek": null,
+      "weekOfMonth": null,
+      "recurrenceEnd": "2026-11-03T13:00:00.000Z"
+    },
+    "expectedKeys": [
+      "2026-10-30T09:00",
+      "2026-10-31T09:00",
+      "2026-11-01T09:00",
+      "2026-11-02T09:00",
+      "2026-11-03T09:00"
+    ]
+  },
+  {
+    "name": "(k) Open-ended weekly Mon 6:00 PM, cut at a fixed horizon (Nov 27 00:00Z)",
+    "timeZone": "America/New_York",
+    "schedule": {
+      "start": "2026-11-02T23:00:00.000Z",
+      "end": "2026-11-03T00:00:00.000Z",
+      "allDay": false,
+      "recurring": true,
+      "frequency": "Weekly",
+      "dayOfWeek": "Mon",
+      "weekOfMonth": null,
+      "recurrenceEnd": null
+    },
+    "horizon": "2026-11-27T00:00:00.000Z",
+    "expectedKeys": [
+      "2026-11-02T18:00",
+      "2026-11-09T18:00",
+      "2026-11-16T18:00",
+      "2026-11-23T18:00"
+    ]
+  },
+  {
+    "name": "(l) Non-recurring one-off (frequency set but the recurring switch is off)",
+    "timeZone": "America/New_York",
+    "schedule": {
+      "start": "2026-11-14T15:00:00.000Z",
+      "end": "2026-11-14T17:00:00.000Z",
+      "allDay": false,
+      "recurring": false,
+      "frequency": "Weekly",
+      "dayOfWeek": "Sat",
+      "weekOfMonth": null,
+      "recurrenceEnd": "2026-12-31T17:00:00.000Z"
+    },
+    "expectedKeys": ["2026-11-14T10:00"]
+  },
+  {
+    "name": "(m) The >24h end-date trap: camp end date typed into end-date-time (Dance Loft Summer Camp shape)",
+    "timeZone": "America/New_York",
+    "schedule": {
+      "start": "2027-06-21T13:00:00.000Z",
+      "end": "2027-06-25T19:00:00.000Z",
+      "allDay": false,
+      "recurring": true,
+      "frequency": "Weekdays (Mon-Fri)",
+      "dayOfWeek": null,
+      "weekOfMonth": null,
+      "recurrenceEnd": "2027-06-25T19:00:00.000Z"
+    },
+    "expectedKeys": [
+      "2027-06-21T09:00",
+      "2027-06-22T09:00",
+      "2027-06-23T09:00",
+      "2027-06-24T09:00",
+      "2027-06-25T09:00"
+    ]
+  },
+  {
+    "name": "(n) Evening 8:30 PM ET whose UTC date is the next day: BYDAY uses the local weekday (Wed, not Thu)",
+    "timeZone": "America/New_York",
+    "schedule": {
+      "start": "2026-10-22T00:30:00.000Z",
+      "end": "2026-10-22T02:00:00.000Z",
+      "allDay": false,
+      "recurring": true,
+      "frequency": "Weekly",
+      "dayOfWeek": "Wed",
+      "weekOfMonth": null,
+      "recurrenceEnd": "2026-11-12T01:30:00.000Z"
+    },
+    "expectedKeys": [
+      "2026-10-21T20:30",
+      "2026-10-28T20:30",
+      "2026-11-04T20:30",
+      "2026-11-11T20:30"
+    ]
+  },
+  {
+    "name": "(o) Recurrence end 2026-12-16T00:00:00Z is Dec 15 7 PM local, so Dec 16 is excluded (the data trap Task 3 avoids)",
+    "timeZone": "America/New_York",
+    "schedule": {
+      "start": "2026-10-28T17:00:00.000Z",
+      "end": "2026-10-28T18:15:00.000Z",
+      "allDay": false,
+      "recurring": true,
+      "frequency": "Weekly",
+      "dayOfWeek": "Wed",
+      "weekOfMonth": null,
+      "recurrenceEnd": "2026-12-16T00:00:00.000Z"
+    },
+    "expectedKeys": [
+      "2026-10-28T13:00",
+      "2026-11-04T13:00",
+      "2026-11-11T13:00",
+      "2026-11-18T13:00",
+      "2026-11-25T13:00",
+      "2026-12-02T13:00",
+      "2026-12-09T13:00"
+    ]
+  },
+  {
+    "name": "(p) Recurring switch on but the frequency maps to no rule: one-time event at the start",
+    "timeZone": "America/New_York",
+    "schedule": {
+      "start": "2026-11-14T15:00:00.000Z",
+      "end": null,
+      "allDay": false,
+      "recurring": true,
+      "frequency": "Fortnightly",
+      "dayOfWeek": "Sat",
+      "weekOfMonth": null,
+      "recurrenceEnd": "2026-12-31T17:00:00.000Z"
+    },
+    "expectedKeys": ["2026-11-14T10:00"]
+  }
+]
