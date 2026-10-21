@@ -35,6 +35,16 @@ const CALENDAR_CONFIG = window.CALENDAR_CONFIG || {
 const DAY_MAP  = { Mon:'MO', Tue:'TU', Wed:'WE', Thu:'TH', Fri:'FR', Sat:'SA', Sun:'SU' };
 const WEEK_MAP = { '1st':'1', '2nd':'2', '3rd':'3', '4th':'4', 'Last':'-1' };
 
+function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+// Local wall-clock stamp with no zone ("floating" time). FullCalendar repeats
+// a floating DTSTART at the same local time, so a 1:00 PM weekly class stays
+// at 1:00 PM after the November DST change; a UTC ("Z") DTSTART slides an hour.
+function floatingStamp(d) {
+  return d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) +
+    'T' + pad2(d.getHours()) + pad2(d.getMinutes()) + pad2(d.getSeconds());
+}
+
 function buildRRule(startDate, frequency, dayOfWeek, weekOfMonth, endDate) {
   if (!frequency) return null;
 
@@ -76,15 +86,14 @@ function buildRRule(startDate, frequency, dayOfWeek, weekOfMonth, endDate) {
       return null;
   }
 
-  // Format DTSTART
-  const dt = new Date(startDate);
-  const dtstart = dt.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+  const dtstart = floatingStamp(new Date(startDate));
 
-  // Format UNTIL
+  // The recurrence end is a date: run through the end of that day, so the
+  // last session still counts when it starts later than the stored time.
   let until = '';
   if (endDate) {
     const ed = new Date(endDate);
-    until = ';UNTIL=' + ed.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    until = ';UNTIL=' + floatingStamp(new Date(ed.getFullYear(), ed.getMonth(), ed.getDate(), 23, 59, 59));
   }
 
   return 'DTSTART:' + dtstart + '\nRRULE:' + rule + until;
@@ -118,8 +127,10 @@ function hasField(item, fieldName) {
   return !!item.querySelector('[data-field="' + fieldName + '"]');
 }
 
-function readEventsFromDOM() {
-  const items = document.querySelectorAll('.w-dyn-item');
+// root defaults to this page; the event-page session picker passes the
+// calendar page's parsed document instead.
+function readEventsFromDOM(root) {
+  const items = (root || document).querySelectorAll('.w-dyn-item');
   const events = [];
 
   items.forEach(function(item) {
@@ -180,9 +191,10 @@ function readEventsFromDOM() {
 
     // Recurring vs one-time
     if (isRecurring && frequency) {
-      const rruleStr = buildRRule(startDate.toISOString(), frequency, dayOfWeek, weekOfMonth, recurEndDate ? recurEndDate.toISOString() : null);
+      const rruleStr = buildRRule(startDate, frequency, dayOfWeek, weekOfMonth, recurEndDate);
       if (rruleStr) {
         eventObj.rrule = rruleStr;
+        eventObj.extendedProps.recurring = true;
         // Duration for recurring events
         if (endDate && !allDay) {
           const diffMs = endDate.getTime() - startDate.getTime();
@@ -304,7 +316,7 @@ function showModal(info) {
   const linkEl = document.getElementById('modalLink');
   if (linkEl) {
     if (props.detailUrl) {
-      linkEl.href = props.detailUrl;
+      linkEl.href = detailHref(info.event);
       linkEl.style.display = '';
     } else {
       linkEl.style.display = 'none';
@@ -314,6 +326,18 @@ function showModal(info) {
   // Show modal (lock page scroll behind it)
   modal.style.display = 'flex';
   document.documentElement.classList.add('cal-modal-open');
+}
+
+function dateKey(d) {
+  return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+}
+
+// A recurring event has one detail page for all its sessions, so the link
+// names the clicked session (?date=YYYY-MM-DD) for the page's session picker.
+function detailHref(event) {
+  var url = event.extendedProps.detailUrl;
+  if (!event.extendedProps.recurring || !event.start) return url;
+  return url + (url.indexOf('?') === -1 ? '?' : '&') + 'date=' + dateKey(event.start);
 }
 
 function hideModal() {
@@ -348,6 +372,9 @@ document.addEventListener('DOMContentLoaded', function() {
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') hideModal();
   });
+
+  // Event detail page (CMS template): session picker for recurring events
+  if (window.EVENT_SESSIONS_CONFIG) initSessionPicker(window.EVENT_SESSIONS_CONFIG);
 
   // Wait for Finsweet CMS Load if present, otherwise init immediately
   if (window.fsAttributes && window.fsAttributes.push) {
@@ -392,8 +419,9 @@ function weekHourRange(events) {
     if (e.start) {
       start = new Date(e.start);
     } else if (e.rrule) {
-      var m = /DTSTART:(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z/.exec(e.rrule);
-      if (m) start = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]));
+      // Floating (local wall-clock) DTSTART, see floatingStamp()
+      var m = /DTSTART:(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})/.exec(e.rrule);
+      if (m) start = new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]);
     }
     if (!start || isNaN(start.getTime())) return;
     var minutes = 60;
@@ -481,7 +509,7 @@ function initCalendar() {
       if (CALENDAR_CONFIG.useModal) {
         showModal(info);
       } else if (info.event.extendedProps.detailUrl) {
-        window.location.href = info.event.extendedProps.detailUrl;
+        window.location.href = detailHref(info.event);
       }
     },
     eventDidMount: function(info) {
@@ -498,4 +526,168 @@ function initCalendar() {
   });
 
   calendar.render();
+}
+
+// ── Event page: session picker ─────────────────────────────────────
+// A recurring event is one CMS item with one detail page. On that page this
+// adds a "Date:" row with a dropdown of the event's sessions, set to the one
+// clicked in the calendar (?date=YYYY-MM-DD) or else the next upcoming one,
+// and shows the chosen session's date in the page's date line.
+//
+// The schedule comes from the calendar page's hidden CMS list, read with the
+// same reader and RRULE builder the calendar uses, so the two always agree.
+// One-off events, and any failure here, leave the page as Webflow rendered it.
+//
+// Template page config (before this script; rrule.min.js must load first):
+//   window.EVENT_SESSIONS_CONFIG = {
+//     calendarUrl:    '/event-calendar',  // page carrying the hidden CMS list
+//     dateSelector:   '…',               // element showing the event date
+//     rowSelector:    '…',               // detail rows (label + value)
+//     textSelector:   '…',               // label/value text inside a row
+//     rowBeforeLabel: 'Start Time',       // the picker row goes above this row
+//     label:          'Date:'
+//   };
+
+var SESSION_LIMIT = 200;
+
+function pagePath(href) {
+  return new URL(href, window.location.origin).pathname.replace(/\/+$/, '').toLowerCase();
+}
+
+// Every session start of a recurring event as a local Date (open-ended rules
+// stop a year out). rrule hands floating times back in the UTC fields.
+function expandSessions(eventObj) {
+  var horizon = new Date();
+  horizon.setFullYear(horizon.getFullYear() + 1);
+  var out = [];
+  window.rrule.rrulestr(eventObj.rrule).all(function(d, i) {
+    var local = new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
+    if (i >= SESSION_LIMIT || local > horizon) return false;
+    out.push(local);
+    return true;
+  });
+  return out;
+}
+
+function sessionLabel(start, durMs, allDay, withYear) {
+  var dateOpts = { weekday: 'short', month: 'short', day: 'numeric' };
+  if (withYear) dateOpts.year = 'numeric';
+  var label = start.toLocaleDateString('en-US', dateOpts);
+  if (allDay) return label;
+  var timeOpts = { hour: 'numeric', minute: '2-digit' };
+  var from = start.toLocaleTimeString('en-US', timeOpts);
+  if (!durMs) return label + ' · ' + from;
+  var to = new Date(start.getTime() + durMs).toLocaleTimeString('en-US', timeOpts);
+  // "1:00–2:15 PM" rather than "1:00 PM – 2:15 PM" (keeps it short on phones)
+  if (from.slice(-2) === to.slice(-2)) from = from.slice(0, -3);
+  return label + ' · ' + from + '–' + to;
+}
+
+function injectSessionPickerStyle() {
+  if (document.getElementById('cal-session-style')) return;
+  var chevron = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23222' stroke-width='1.6'/%3E%3C/svg%3E";
+  var style = document.createElement('style');
+  style.id = 'cal-session-style';
+  style.textContent =
+    '.cal-session-select{font:inherit;color:inherit;letter-spacing:inherit;line-height:1.3;max-width:100%;margin:0;text-overflow:ellipsis;' +
+    'padding:.45em 2.2em .45em .7em;border:1px solid currentColor;border-radius:6px;cursor:pointer;' +
+    '-webkit-appearance:none;appearance:none;background:transparent url("' + chevron + '") no-repeat right .7em center/.75em auto}' +
+    '.cal-session-select:focus-visible{outline:2px solid currentColor;outline-offset:2px}' +
+    // A percentage width lets the dropdown shrink to the row on phones
+    '@media (max-width:' + PHONE_MAX_WIDTH + 'px){.cal-session-select{width:100%}}';
+  document.head.appendChild(style);
+}
+
+function renderSessionPicker(eventObj, cfg) {
+  var sessions = expandSessions(eventObj);
+  if (sessions.length < 2) return;
+
+  var allDay = eventObj.allDay;
+  var d = eventObj.duration;
+  var durMs = allDay ? 86400000 : (d ? (d.hours * 60 + d.minutes) * 60000 : 0);
+  var now = Date.now();
+  var wanted = new URLSearchParams(window.location.search).get('date');
+  var requested = -1, upcoming = -1;
+  for (var i = 0; i < sessions.length; i++) {
+    if (requested === -1 && dateKey(sessions[i]) === wanted) requested = i;
+    if (upcoming === -1 && sessions[i].getTime() + durMs >= now) upcoming = i;
+  }
+
+  // List the sessions still to come (from the requested one, if that is
+  // earlier); once the run is over, list them all.
+  var first = upcoming === -1 ? 0 : upcoming;
+  if (requested !== -1 && requested < first) first = requested;
+  var shown = sessions.slice(first);
+  var selected = requested !== -1 ? requested - first : (upcoming !== -1 ? upcoming - first : 0);
+  var withYear = shown[0].getFullYear() !== shown[shown.length - 1].getFullYear();
+
+  // The new row is a copy of an existing detail row, so it keeps the
+  // template's own classes and layout
+  var rows = document.querySelectorAll(cfg.rowSelector);
+  var before = rows[0] || null;
+  for (var r = 0; r < rows.length; r++) {
+    if (cfg.rowBeforeLabel && rows[r].textContent.trim().indexOf(cfg.rowBeforeLabel) === 0) { before = rows[r]; break; }
+  }
+  if (!before) return;
+  var row = before.cloneNode(true);
+  row.classList.remove('w-condition-invisible');
+  var texts = row.querySelectorAll(cfg.textSelector);
+  if (texts.length < 2) return;
+
+  var select = document.createElement('select');
+  select.className = 'cal-session-select';
+  select.setAttribute('aria-label', 'Choose a session date');
+  shown.forEach(function(start, n) {
+    var opt = document.createElement('option');
+    opt.value = dateKey(start);
+    opt.textContent = sessionLabel(start, durMs, allDay, withYear);
+    if (n === selected) opt.selected = true;
+    select.appendChild(opt);
+  });
+
+  texts[0].textContent = cfg.label || 'Date:';
+  texts[1].classList.remove('w-dyn-bind-empty');
+  texts[1].textContent = '';
+  texts[1].appendChild(select);
+  // Let the value cell shrink on phones so a long label can't widen the rows
+  for (var el = texts[1]; el && el !== row; el = el.parentNode) el.style.minWidth = '0';
+  injectSessionPickerStyle();
+  before.parentNode.insertBefore(row, before);
+
+  var dateEl = cfg.dateSelector ? document.querySelector(cfg.dateSelector) : null;
+  function showDate(n) {
+    if (dateEl) dateEl.textContent = shown[n].toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  }
+  showDate(selected);
+
+  select.addEventListener('change', function() {
+    showDate(select.selectedIndex);
+    // Keep the address shareable for the chosen session
+    var url = new URL(window.location.href);
+    url.searchParams.set('date', select.value);
+    history.replaceState(null, '', url);
+  });
+}
+
+function initSessionPicker(cfg) {
+  if (!window.rrule || !window.fetch || !window.DOMParser) return;
+  var here = pagePath(window.location.href);
+  fetch(cfg.calendarUrl || '/event-calendar', { credentials: 'same-origin' })
+    .then(function(res) {
+      if (!res.ok) throw new Error('calendar page HTTP ' + res.status);
+      return res.text();
+    })
+    .then(function(html) {
+      var events = readEventsFromDOM(new DOMParser().parseFromString(html, 'text/html'));
+      for (var i = 0; i < events.length; i++) {
+        var url = events[i].extendedProps.detailUrl;
+        if (url && events[i].rrule && pagePath(url) === here) {
+          renderSessionPicker(events[i], cfg);
+          return;
+        }
+      }
+    })
+    .catch(function(err) {
+      if (window.console) console.warn('[calendar] session picker:', err);
+    });
 }
