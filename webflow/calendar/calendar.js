@@ -10,6 +10,10 @@
  *   <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/rrule@6.1.17/index.global.min.js"></script>
  *
  * Usage: Place this script in the page </body> custom code, after the CALENDAR_CONFIG block.
+ *
+ * Optional: CALENDAR_CONFIG.envoyFeedBase (e.g. 'https://register.envoyai.co/artplacedc')
+ * turns on Envoy registration status for events with the Registration Required
+ * switch on — see "Envoy registration status" below. Without it nothing is fetched.
  */
 
 // ── Client Config (override per site) ──────────────────────────────
@@ -151,6 +155,7 @@ function readEventsFromDOM(root) {
     const heroImage   = getField(item, 'hero-image');
     const status      = getField(item, 'event-status');
     const featured    = hasField(item, 'featured-event');
+    const regRequired = hasField(item, 'registration-required');
 
     // Skip cancelled events
     if (status === 'Cancelled') return;
@@ -179,7 +184,8 @@ function readEventsFromDOM(root) {
         category: category,
         heroImage: heroImage,
         status: status,
-        featured: featured
+        featured: featured,
+        registrationRequired: regRequired
       }
     };
 
@@ -218,6 +224,8 @@ function readEventsFromDOM(root) {
     const linkEl = item.querySelector('a[href]');
     if (linkEl) {
       eventObj.extendedProps.detailUrl = linkEl.getAttribute('href');
+      // The item slug (last path segment) names the event's Envoy program
+      eventObj.extendedProps.slug = linkEl.getAttribute('href').split(/[?#]/)[0].replace(/\/+$/, '').split('/').pop();
     }
 
     events.push(eventObj);
@@ -322,6 +330,16 @@ function showModal(info) {
       linkEl.style.display = 'none';
     }
   }
+
+  // Registration status + Register link (optional #modalStatus / #modalRegister;
+  // both stay hidden unless Envoy has this session)
+  applyRegistration(
+    document.getElementById('modalStatus'),
+    document.getElementById('modalRegister'),
+    info.event.extendedProps.envoy,
+    envoySessionFor(info.event),
+    { showSpots: true, registerText: 'Register for this date' }
+  );
 
   // Show modal (lock page scroll behind it)
   modal.style.display = 'flex';
@@ -489,7 +507,8 @@ function initCalendar() {
       // Time-grid boxes are sized by duration: title + time run inline and
       // clamp to the lines that fit, so nothing is cut mid-glyph
       if (isTimeGrid) {
-        html += '<div class="fc-event-card-clamp"><span class="fc-event-card-title">' + escapeHtml(arg.event.title) + '</span>';
+        // A Full/Cancelled tag leads, so the line clamp can't cut it off
+        html += '<div class="fc-event-card-clamp">' + envoyTagHtml(arg.event) + '<span class="fc-event-card-title">' + escapeHtml(arg.event.title) + '</span>';
         if (timeStr) html += ' <span class="fc-event-card-time">' + timeStr + '</span>';
         html += '</div></div>';
         return { html: html };
@@ -501,6 +520,7 @@ function initCalendar() {
       if (timeStr) {
         html += '<div class="fc-event-card-time">' + timeStr + '</div>';
       }
+      html += envoyTagHtml(arg.event);
       html += '</div>';
       return { html: html };
     },
@@ -526,6 +546,183 @@ function initCalendar() {
   });
 
   calendar.render();
+
+  // Registration status arrives after the calendar is on screen
+  loadEnvoyStatus(calendar);
+}
+
+// ── Envoy registration status ──────────────────────────────────────
+// An event with the Registration Required switch on gets a registration
+// program in Envoy (program slug = the event's item slug) whose sessions
+// mirror this calendar. Envoy publishes per-session status:
+//   GET <envoyFeedBase>/<slug>/sessions.json
+//   200 → { program: { registerUrl, waitlistEnabled, … },
+//           sessions: [ { localDate: 'YYYY-MM-DD', localStart: 'HH:mm',
+//                         status: 'open'|'waitlist'|'full'|'cancelled',
+//                         spotsLeft: number|null, … } ] }
+//   404 → the program isn't open yet (draft/beta/closed): show nothing.
+// The calendar still decides the schedule; the feed only adds a status to a
+// session. Sessions match on wall-clock date + start time ('YYYY-MM-DDTHH:mm'),
+// the same local time the calendar places them at, so visitors outside ET
+// match too. Any failure leaves the page exactly as it is without the feed.
+
+var ENVOY_TIMEOUT_MS = 5000;
+var ENVOY_STATUSES = { open: true, waitlist: true, full: true, cancelled: true };
+var ENVOY_TEXT = {
+  waitlist:  'This class is filled. Would you like to be part of the waitlist?',
+  full:      'This class is full.',
+  cancelled: 'This session is cancelled.'
+};
+
+// 'YYYY-MM-DDTHH:mm' from a Date's local (wall-clock) fields
+function sessionKey(d) {
+  return dateKey(d) + 'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes());
+}
+
+// Only http(s) links become hrefs
+function safeHttpUrl(str) {
+  if (typeof str !== 'string' || !str) return null;
+  try {
+    var u = new URL(str);
+    return (u.protocol === 'https:' || u.protocol === 'http:') ? u.href : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Feed body → { registerUrl, waitlistEnabled, byKey: { key: session } }
+function envoyStatusMap(data) {
+  if (!data || !data.program || !Array.isArray(data.sessions)) return null;
+  var byKey = {};
+  data.sessions.forEach(function(s) {
+    if (!s || !ENVOY_STATUSES[s.status]) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(s.localDate) || !/^\d{2}:\d{2}$/.test(s.localStart)) return;
+    byKey[s.localDate + 'T' + s.localStart] = {
+      status: s.status,
+      spotsLeft: (typeof s.spotsLeft === 'number' && isFinite(s.spotsLeft)) ? s.spotsLeft : null,
+      localDate: s.localDate
+    };
+  });
+  return {
+    registerUrl: safeHttpUrl(data.program.registerUrl),
+    waitlistEnabled: !!data.program.waitlistEnabled,
+    byKey: byKey
+  };
+}
+
+// Resolves to the status map, or null when the program isn't open (404).
+// Rejects on network errors, other HTTP errors and the timeout.
+function fetchEnvoyFeed(base, slug) {
+  var url = String(base).replace(/\/+$/, '') + '/' + encodeURIComponent(slug) + '/sessions.json';
+  var ctrl = (typeof AbortController === 'function') ? new AbortController() : null;
+  var timer = ctrl ? setTimeout(function() { ctrl.abort(); }, ENVOY_TIMEOUT_MS) : null;
+  function done() { if (timer) clearTimeout(timer); }
+  var opts = { credentials: 'omit' };
+  if (ctrl) opts.signal = ctrl.signal;
+  return fetch(url, opts)
+    .then(function(res) {
+      if (res.status === 404) return null;
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    })
+    .then(function(data) {
+      done();
+      return data ? envoyStatusMap(data) : null;
+    }, function(err) {
+      done();
+      throw err;
+    });
+}
+
+// The Envoy session for a calendar occurrence, if the feed has one
+function envoySessionFor(event) {
+  var envoy = event.extendedProps.envoy;
+  if (!envoy || !envoy.byKey || !event.start) return null;
+  return envoy.byKey[sessionKey(event.start)] || null;
+}
+
+function spotsText(n) {
+  return n + (n === 1 ? ' spot left' : ' spots left');
+}
+
+function registerHref(envoy, localDate) {
+  var u = new URL(envoy.registerUrl);
+  u.searchParams.set('date', localDate);
+  return u.href;
+}
+
+// Small "Full" / "Cancelled" tag for an event chip ('' for open sessions)
+function envoyTagHtml(event) {
+  var s = envoySessionFor(event);
+  if (!s) return '';
+  var text = '', mod = '';
+  if (s.status === 'full' || s.status === 'waitlist') text = 'Full';
+  else if (s.status === 'cancelled') { text = 'Cancelled'; mod = ' fc-event-card-tag--cancelled'; }
+  if (!text) return '';
+  return '<span class="fc-event-card-tag' + mod + '">' + escapeHtml(text) + '</span>';
+}
+
+// Fill a status element and a register link for one session, or hide both
+// when there is no session. Either element may be missing.
+//   opts.showSpots     — open sessions show "N spots left" in the status
+//   opts.registerText  — link text for open sessions
+function applyRegistration(statusEl, linkEl, envoy, session, opts) {
+  var status = '', label = '', href = '';
+  if (envoy && session) {
+    if (session.status === 'open') {
+      if (opts.showSpots && session.spotsLeft !== null) status = spotsText(session.spotsLeft);
+      label = opts.registerText;
+    } else if (session.status === 'waitlist') {
+      status = ENVOY_TEXT.waitlist;
+      label = 'Join the waitlist';
+    } else {
+      status = ENVOY_TEXT[session.status] || '';
+    }
+    if (label && envoy.registerUrl) href = registerHref(envoy, session.localDate);
+  }
+  if (statusEl) {
+    statusEl.textContent = status;
+    statusEl.style.display = status ? '' : 'none';
+  }
+  if (linkEl) {
+    if (href) {
+      linkEl.setAttribute('href', href);
+      linkEl.textContent = label;
+      linkEl.removeAttribute('target'); // same tab
+      // Set explicitly: the element may be hidden by a class, not only inline
+      linkEl.style.display = 'inline-block';
+    } else {
+      linkEl.style.display = 'none';
+    }
+  }
+}
+
+// Calendar page: one feed request per registration-required event, in
+// parallel; each answer is stored on the event so FullCalendar re-renders it.
+function loadEnvoyStatus(calendar) {
+  var base = CALENDAR_CONFIG.envoyFeedBase;
+  if (!base || !window.fetch || typeof Promise === 'undefined' || !Promise.allSettled) return;
+  var bySlug = {};
+  calendar.getEvents().forEach(function(ev) {
+    var p = ev.extendedProps;
+    if (!p.registrationRequired || !p.slug) return;
+    (bySlug[p.slug] = bySlug[p.slug] || []).push(ev);
+  });
+  var slugs = Object.keys(bySlug);
+  if (!slugs.length) return;
+  Promise.allSettled(slugs.map(function(slug) { return fetchEnvoyFeed(base, slug); }))
+    .then(function(results) {
+      calendar.batchRendering(function() {
+        results.forEach(function(r, i) {
+          if (r.status === 'rejected') {
+            if (window.console) console.warn('[calendar] registration status for ' + slugs[i] + ':', r.reason);
+            return;
+          }
+          if (!r.value) return;
+          bySlug[slugs[i]].forEach(function(ev) { ev.setExtendedProp('envoy', r.value); });
+        });
+      });
+    });
 }
 
 // ── Event page: session picker ─────────────────────────────────────
@@ -545,8 +742,15 @@ function initCalendar() {
 //     rowSelector:    '…',               // detail rows (label + value)
 //     textSelector:   '…',               // label/value text inside a row
 //     rowBeforeLabel: 'Start Time',       // the picker row goes above this row
-//     label:          'Date:'
+//     label:          'Date:',
+//     envoyFeedBase:  '…'                 // optional: Envoy registration status
 //   };
+//
+// With envoyFeedBase set, a registration-required event whose Envoy program
+// is open also gets: each session's status in its dropdown label, a status
+// line under the picker row, and the template's [data-envoy-register] link
+// (hidden by default) pointed at the chosen session. One-off events get the
+// status line and link for their single session.
 
 var SESSION_LIMIT = 200;
 
@@ -598,9 +802,21 @@ function injectSessionPickerStyle() {
   document.head.appendChild(style);
 }
 
+// The detail row the picker row goes above (the rowBeforeLabel row, else the first)
+function pickerAnchorRow(cfg) {
+  var rows = document.querySelectorAll(cfg.rowSelector);
+  var before = rows[0] || null;
+  for (var r = 0; r < rows.length; r++) {
+    if (cfg.rowBeforeLabel && rows[r].textContent.trim().indexOf(cfg.rowBeforeLabel) === 0) { before = rows[r]; break; }
+  }
+  return before;
+}
+
+// Returns { select, sessions, labels, row, valueEl } once the picker is on
+// the page, or null when the event has no picker.
 function renderSessionPicker(eventObj, cfg) {
   var sessions = expandSessions(eventObj);
-  if (sessions.length < 2) return;
+  if (sessions.length < 2) return null;
 
   var allDay = eventObj.allDay;
   var d = eventObj.duration;
@@ -623,26 +839,23 @@ function renderSessionPicker(eventObj, cfg) {
 
   // The new row is a copy of an existing detail row, so it keeps the
   // template's own classes and layout
-  var rows = document.querySelectorAll(cfg.rowSelector);
-  var before = rows[0] || null;
-  for (var r = 0; r < rows.length; r++) {
-    if (cfg.rowBeforeLabel && rows[r].textContent.trim().indexOf(cfg.rowBeforeLabel) === 0) { before = rows[r]; break; }
-  }
-  if (!before) return;
+  var before = pickerAnchorRow(cfg);
+  if (!before) return null;
   var row = before.cloneNode(true);
   row.classList.remove('w-condition-invisible');
   // The dropdown box is taller than a text line: line the label up with its text
   row.style.alignItems = 'baseline';
   var texts = row.querySelectorAll(cfg.textSelector);
-  if (texts.length < 2) return;
+  if (texts.length < 2) return null;
 
   var select = document.createElement('select');
   select.className = 'cal-session-select';
   select.setAttribute('aria-label', 'Choose a session date');
+  var labels = [];
   shown.forEach(function(start, n) {
     var opt = document.createElement('option');
     opt.value = dateKey(start);
-    opt.textContent = sessionLabel(start, durMs, allDay, withYear);
+    opt.textContent = labels[n] = sessionLabel(start, durMs, allDay, withYear);
     if (n === selected) opt.selected = true;
     select.appendChild(opt);
   });
@@ -669,6 +882,84 @@ function renderSessionPicker(eventObj, cfg) {
     url.searchParams.set('date', select.value);
     history.replaceState(null, '', url);
   });
+
+  return { select: select, sessions: shown, labels: labels, row: row, valueEl: texts[1] };
+}
+
+var ENVOY_OPTION_SUFFIX = {
+  waitlist:  ' — Full, join the waitlist',
+  full:      ' — Full',
+  cancelled: ' — Cancelled'
+};
+
+// A status line styled like the detail rows' value text, spaced like a row
+function makeStatusLine(valueEl, rowEl) {
+  var line = document.createElement('div');
+  if (valueEl) line.className = valueEl.className.replace(/\b(w-dyn-bind-empty|w-condition-invisible)\b/g, '').replace(/\s+/g, ' ').trim();
+  if (rowEl && window.getComputedStyle) line.style.marginBottom = window.getComputedStyle(rowEl).marginBottom;
+  line.setAttribute('data-envoy-status', '');
+  line.setAttribute('aria-live', 'polite');
+  line.style.display = 'none';
+  return line;
+}
+
+// Event page: decorate the picker (or a one-off's single session) with the
+// event's Envoy status. Runs after the picker is on screen; 404, errors and
+// a missing feed base leave the page untouched.
+function initEventRegistration(eventObj, picker, cfg) {
+  var base = cfg.envoyFeedBase;
+  var slug = eventObj.extendedProps.slug;
+  if (!base || !slug || !eventObj.extendedProps.registrationRequired) return;
+
+  // Without a dropdown, only a single session can be matched
+  var single = null;
+  if (!picker) {
+    if (!eventObj.rrule) single = new Date(eventObj.start);
+    else {
+      var all = expandSessions(eventObj);
+      if (all.length === 1) single = all[0];
+    }
+    if (!single || isNaN(single.getTime())) return;
+  }
+
+  fetchEnvoyFeed(base, slug)
+    .then(function(envoy) {
+      if (!envoy) return;
+      var link = document.querySelector('[data-envoy-register]');
+      var opts = { showSpots: false, registerText: 'Register' };
+
+      if (!picker) {
+        var anchor = pickerAnchorRow(cfg);
+        var line = null;
+        if (anchor) {
+          line = makeStatusLine(anchor.querySelectorAll(cfg.textSelector)[1], anchor);
+          anchor.parentNode.insertBefore(line, anchor);
+        }
+        applyRegistration(line, link, envoy, envoy.byKey[sessionKey(single)] || null, opts);
+        return;
+      }
+
+      var found = picker.sessions.map(function(start) { return envoy.byKey[sessionKey(start)] || null; });
+      for (var n = 0; n < found.length; n++) {
+        var s = found[n], suffix = '';
+        if (s) {
+          if (ENVOY_OPTION_SUFFIX[s.status]) suffix = ENVOY_OPTION_SUFFIX[s.status];
+          else if (s.status === 'open' && s.spotsLeft !== null) suffix = ' — ' + spotsText(s.spotsLeft);
+        }
+        picker.select.options[n].textContent = picker.labels[n] + suffix;
+      }
+
+      var statusLine = makeStatusLine(picker.valueEl, picker.row);
+      picker.row.parentNode.insertBefore(statusLine, picker.row.nextSibling);
+      function update() {
+        applyRegistration(statusLine, link, envoy, found[picker.select.selectedIndex] || null, opts);
+      }
+      update();
+      picker.select.addEventListener('change', update);
+    })
+    .catch(function(err) {
+      if (window.console) console.warn('[calendar] registration status:', err);
+    });
 }
 
 function initSessionPicker(cfg) {
@@ -681,13 +972,17 @@ function initSessionPicker(cfg) {
     })
     .then(function(html) {
       var events = readEventsFromDOM(new DOMParser().parseFromString(html, 'text/html'));
+      var oneOff = null;
       for (var i = 0; i < events.length; i++) {
         var url = events[i].extendedProps.detailUrl;
-        if (url && events[i].rrule && pagePath(url) === here) {
-          renderSessionPicker(events[i], cfg);
+        if (!url || pagePath(url) !== here) continue;
+        if (events[i].rrule) {
+          initEventRegistration(events[i], renderSessionPicker(events[i], cfg), cfg);
           return;
         }
+        if (!oneOff) oneOff = events[i];
       }
+      if (oneOff) initEventRegistration(oneOff, null, cfg);
     })
     .catch(function(err) {
       if (window.console) console.warn('[calendar] session picker:', err);

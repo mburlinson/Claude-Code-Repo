@@ -78,6 +78,26 @@
   color: #111827;
 }
 
+/* Envoy registration status on a session: "Full" / "Cancelled" */
+.fc-event-card-tag {
+  display: inline-block;
+  margin-top: 2px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: #e5e7eb;
+  color: #374151;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1.5;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+.fc-event-card-tag--cancelled {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 /* Week (time-grid) view: the box height is the event's duration, so keep
    the card inside it instead of spilling over the next event */
 .fc .fc-timegrid-slot {
@@ -109,6 +129,10 @@
   display: inline;
   margin: 0;
   font-size: inherit;
+}
+.fc-event-card-clamp .fc-event-card-tag {
+  margin: 0 4px 0 0;
+  vertical-align: 1px;
 }
 
 /* List view: the dot and time column already carry color and time */
@@ -146,7 +170,8 @@
   text-overflow: ellipsis;
 }
 .fc-phone .fc-daygrid-event .fc-event-card-category,
-.fc-phone .fc-daygrid-event .fc-event-card-time {
+.fc-phone .fc-daygrid-event .fc-event-card-time,
+.fc-phone .fc-daygrid-event .fc-event-card-tag {
   display: none;
 }
 .fc-phone .fc-daygrid-day-number {
@@ -272,6 +297,28 @@ html.cal-modal-open body {
   font-weight: 600;
 }
 #modalLink:hover {
+  background: #111827;
+}
+
+/* Envoy registration (optional #modalStatus / #modalRegister) */
+#modalStatus {
+  font-size: 0.9rem;
+  color: #374151;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+#modalRegister {
+  display: inline-block;
+  margin: 0 8px 8px 0;
+  background: #374151;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+#modalRegister:hover {
   background: #111827;
 }
 
