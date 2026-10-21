@@ -590,7 +590,7 @@ function injectSessionPickerStyle() {
   style.id = 'cal-session-style';
   style.textContent =
     '.cal-session-select{font:inherit;color:inherit;letter-spacing:inherit;line-height:1.3;max-width:100%;margin:0;text-overflow:ellipsis;' +
-    'padding:.45em 2.2em .45em .7em;border:1px solid currentColor;border-radius:6px;cursor:pointer;' +
+    'padding:.3em 2.2em .3em .6em;border:1px solid currentColor;border-radius:6px;cursor:pointer;' +
     '-webkit-appearance:none;appearance:none;background:transparent url("' + chevron + '") no-repeat right .7em center/.75em auto}' +
     '.cal-session-select:focus-visible{outline:2px solid currentColor;outline-offset:2px}' +
     // A percentage width lets the dropdown shrink to the row on phones
@@ -631,6 +631,8 @@ function renderSessionPicker(eventObj, cfg) {
   if (!before) return;
   var row = before.cloneNode(true);
   row.classList.remove('w-condition-invisible');
+  // The dropdown box is taller than a text line: line the label up with its text
+  row.style.alignItems = 'baseline';
   var texts = row.querySelectorAll(cfg.textSelector);
   if (texts.length < 2) return;
 
