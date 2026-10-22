@@ -1143,7 +1143,7 @@ function injectRegModalStyle() {
     '.cal-reg-close{flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;margin:0;padding:0;' +
       'border:0;border-radius:50%;background:transparent;color:#374151;font-family:inherit;font-size:1.75rem;line-height:1;cursor:pointer}' +
     '.cal-reg-close:hover{background:#f3f4f6;color:#111827}' +
-    '.cal-reg-close:focus-visible{outline:2px solid #111827;outline-offset:2px}' +
+    '.cal-reg-close:focus-visible{outline:2px solid #111827;outline-offset:-4px}' +
     '.cal-reg-fallback{flex:none;margin:0;padding:10px 20px;background:#fef3c7;color:#111827;font-size:.875rem;line-height:1.45}' +
     '.cal-reg-fallback[hidden]{display:none}' +
     '.cal-reg-fallback a{color:inherit;font-weight:600;text-decoration:underline}' +
