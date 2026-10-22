@@ -14,6 +14,11 @@
  * Optional: CALENDAR_CONFIG.envoyFeedBase (e.g. 'https://register.envoyai.co/artplacedc')
  * turns on Envoy registration status for events with the Registration Required
  * switch on — see "Envoy registration status" below. Without it nothing is fetched.
+ *
+ * Optional: registerModal: true (with envoyFeedBase, on CALENDAR_CONFIG and/or
+ * EVENT_SESSIONS_CONFIG) opens Envoy's registration form in a full-screen
+ * overlay on this page instead of leaving the site — see "Registration
+ * overlay" below. Default false: Register links behave exactly as in v1.0.18.
  */
 
 // ── Client Config (override per site) ──────────────────────────────
@@ -333,6 +338,7 @@ function showModal(info) {
 
   // Registration status + Register link (optional #modalStatus / #modalRegister;
   // both stay hidden unless Envoy has this session)
+  popupEvent = { slug: props.slug || '', start: info.event.start };
   applyRegistration(
     document.getElementById('modalStatus'),
     document.getElementById('modalRegister'),
@@ -345,6 +351,10 @@ function showModal(info) {
   modal.style.display = 'flex';
   document.documentElement.classList.add('cal-modal-open');
 }
+
+// The event the popup shows (slug + clicked occurrence), so a finished
+// registration can refresh its status line (see refreshRegistrationStatus)
+var popupEvent = null;
 
 function dateKey(d) {
   return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
@@ -362,6 +372,7 @@ function hideModal() {
   const modal = document.getElementById('eventModal');
   if (modal) modal.style.display = 'none';
   document.documentElement.classList.remove('cal-modal-open');
+  popupEvent = null;
 }
 
 // The modal markup can sit inside a page section whose z-index is below the
@@ -390,6 +401,9 @@ document.addEventListener('DOMContentLoaded', function() {
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') hideModal();
   });
+
+  // Register links open Envoy's form in an overlay (registerModal: true only)
+  initRegisterModal();
 
   // Event detail page (CMS template): session picker for recurring events
   if (window.EVENT_SESSIONS_CONFIG) initSessionPicker(window.EVENT_SESSIONS_CONFIG);
@@ -546,10 +560,14 @@ function initCalendar() {
   });
 
   calendar.render();
+  calendarInstance = calendar;
 
   // Registration status arrives after the calendar is on screen
   loadEnvoyStatus(calendar);
 }
+
+// The rendered calendar, for refreshing registration status later
+var calendarInstance = null;
 
 // ── Envoy registration status ──────────────────────────────────────
 // An event with the Registration Required switch on gets a registration
@@ -699,9 +717,12 @@ function applyRegistration(statusEl, linkEl, envoy, session, opts) {
 
 // Calendar page: one feed request per registration-required event, in
 // parallel; each answer is stored on the event so FullCalendar re-renders it.
+// Resolves to { slug: status map | null } for the slugs that answered
+// (null = not open), or null when nothing was fetched. Re-running it (after
+// a registration in the overlay) refreshes every chip from the feed.
 function loadEnvoyStatus(calendar) {
   var base = CALENDAR_CONFIG.envoyFeedBase;
-  if (!base || !window.fetch || typeof Promise === 'undefined' || !Promise.allSettled) return;
+  if (!base || !window.fetch || typeof Promise === 'undefined' || !Promise.allSettled) return null;
   var bySlug = {};
   calendar.getEvents().forEach(function(ev) {
     var p = ev.extendedProps;
@@ -709,19 +730,22 @@ function loadEnvoyStatus(calendar) {
     (bySlug[p.slug] = bySlug[p.slug] || []).push(ev);
   });
   var slugs = Object.keys(bySlug);
-  if (!slugs.length) return;
-  Promise.allSettled(slugs.map(function(slug) { return fetchEnvoyFeed(base, slug); }))
+  if (!slugs.length) return null;
+  return Promise.allSettled(slugs.map(function(slug) { return fetchEnvoyFeed(base, slug); }))
     .then(function(results) {
+      var answers = {};
       calendar.batchRendering(function() {
         results.forEach(function(r, i) {
           if (r.status === 'rejected') {
             if (window.console) console.warn('[calendar] registration status for ' + slugs[i] + ':', r.reason);
             return;
           }
+          answers[slugs[i]] = r.value;
           if (!r.value) return;
           bySlug[slugs[i]].forEach(function(ev) { ev.setExtendedProp('envoy', r.value); });
         });
       });
+      return answers;
     });
 }
 
@@ -922,45 +946,73 @@ function initEventRegistration(eventObj, picker, cfg) {
     if (!single || isNaN(single.getTime())) return;
   }
 
-  fetchEnvoyFeed(base, slug)
-    .then(function(envoy) {
-      if (!envoy) return;
-      var link = document.querySelector('[data-envoy-register]');
-      var opts = { showSpots: false, registerText: 'Register' };
+  var link = document.querySelector('[data-envoy-register]');
+  var opts = { showSpots: false, registerText: 'Register' };
+  var line = null;       // one-off: status line above the anchor row
+  var statusLine = null; // recurring: status line under the picker row
+  var found = [];
+  var listening = false;
 
-      if (!picker) {
+  // The latest feed answer (the picker's change listener reads it)
+  var envoy = null;
+
+  // Idempotent: the first answer adds the status line, later answers (a
+  // refresh after a registration in the overlay) only update it.
+  function render(answer) {
+    if (!picker) {
+      if (!line) {
+        if (!answer) return;
         var anchor = pickerAnchorRow(cfg);
-        var line = null;
         if (anchor) {
           line = makeStatusLine(anchor.querySelectorAll(cfg.textSelector)[1], anchor);
           anchor.parentNode.insertBefore(line, anchor);
         }
-        applyRegistration(line, link, envoy, envoy.byKey[sessionKey(single)] || null, opts);
-        return;
       }
+      applyRegistration(line, link, answer, answer ? (answer.byKey[sessionKey(single)] || null) : null, opts);
+      return;
+    }
 
-      var found = picker.sessions.map(function(start) { return envoy.byKey[sessionKey(start)] || null; });
-      for (var n = 0; n < found.length; n++) {
-        var s = found[n], suffix = '';
-        if (s) {
-          if (ENVOY_OPTION_SUFFIX[s.status]) suffix = ENVOY_OPTION_SUFFIX[s.status];
-          else if (s.status === 'open' && s.spotsLeft !== null) suffix = ' — ' + spotsText(s.spotsLeft);
-        }
-        picker.select.options[n].textContent = picker.labels[n] + suffix;
+    if (!answer && !statusLine) return;
+    found = picker.sessions.map(function(start) { return answer ? (answer.byKey[sessionKey(start)] || null) : null; });
+    for (var n = 0; n < found.length; n++) {
+      var s = found[n], suffix = '';
+      if (s) {
+        if (ENVOY_OPTION_SUFFIX[s.status]) suffix = ENVOY_OPTION_SUFFIX[s.status];
+        else if (s.status === 'open' && s.spotsLeft !== null) suffix = ' — ' + spotsText(s.spotsLeft);
       }
+      picker.select.options[n].textContent = picker.labels[n] + suffix;
+    }
 
-      var statusLine = makeStatusLine(picker.valueEl, picker.row);
+    if (!statusLine) {
+      statusLine = makeStatusLine(picker.valueEl, picker.row);
       picker.row.parentNode.insertBefore(statusLine, picker.row.nextSibling);
-      function update() {
+    }
+    applyRegistration(statusLine, link, answer, found[picker.select.selectedIndex] || null, opts);
+    if (!listening) {
+      listening = true;
+      picker.select.addEventListener('change', function() {
         applyRegistration(statusLine, link, envoy, found[picker.select.selectedIndex] || null, opts);
-      }
-      update();
-      picker.select.addEventListener('change', update);
-    })
-    .catch(function(err) {
-      if (window.console) console.warn('[calendar] registration status:', err);
-    });
+      });
+    }
+  }
+
+  function load() {
+    return fetchEnvoyFeed(base, slug)
+      .then(function(answer) {
+        envoy = answer;
+        render(answer);
+      })
+      .catch(function(err) {
+        if (window.console) console.warn('[calendar] registration status:', err);
+      });
+  }
+  eventRegistrationRefresh = load;
+  load();
 }
+
+// The event page's registration status loader (set by initEventRegistration),
+// re-run after a registration in the overlay
+var eventRegistrationRefresh = null;
 
 function initSessionPicker(cfg) {
   if (!window.rrule || !window.fetch || !window.DOMParser) return;
@@ -987,4 +1039,322 @@ function initSessionPicker(cfg) {
     .catch(function(err) {
       if (window.console) console.warn('[calendar] session picker:', err);
     });
+}
+
+// ── Registration overlay (registerModal) ───────────────────────────
+// With registerModal: true (and envoyFeedBase) on CALENDAR_CONFIG (the
+// calendar popup's #modalRegister) or EVENT_SESSIONS_CONFIG (the event page's
+// [data-envoy-register]), Register opens Envoy's own form in a full-screen
+// overlay on this page — an iframe of the same register URL plus embed=1 —
+// instead of leaving the site. The form, waiver, guardian, medical and
+// signature logic all stay in Envoy; this only frames it.
+//
+//   - Progressive enhancement: the link's href stays the real Envoy URL;
+//     cmd/ctrl/shift/alt and middle clicks open it normally, and only links
+//     to the Envoy host are taken over.
+//   - Envoy's embed pages post { source: 'envoy-register', type } messages:
+//     'ready' (hides the slow-load notice), 'resize' (ignored: the panel has
+//     a fixed height and the frame scrolls), 'complete' (the confirmation
+//     stays in the overlay; the status chips/line refresh from the feed).
+//     Only messages from the Envoy origin and from this overlay's own frame
+//     count.
+//   - No 'ready' within REG_MODAL_READY_MS: a notice with "Open registration
+//     in a new tab" appears above the frame (the frame stays: it may still be
+//     loading, or may be usable without sending messages).
+//   - Dialog: role=dialog + aria-modal, labelled by its title, focus moves to
+//     the close button and is kept inside, Esc and the 44px close button
+//     close it, the backdrop does NOT (a half-filled form must not vanish),
+//     focus returns to the Register link.
+//   - History: opening pushes a history entry, so the phone's Back button
+//     closes the overlay; closing with the button or Esc pops it again.
+//   - From the calendar popup the overlay stacks ABOVE the popup, so closing
+//     it returns the visitor to the same event and date.
+//   - Styles are injected once (all classes prefixed cal-reg-): the event
+//     page doesn't load calendar.css.
+
+var REG_MODAL_READY_MS = 8000;
+var REG_MESSAGE_SOURCE = 'envoy-register';
+var regModal = null;
+
+// The Envoy origin for a feed base ('https://register.envoyai.co'), or ''
+function envoyOrigin(base) {
+  try {
+    var u = new URL(String(base));
+    return (u.protocol === 'https:' || u.protocol === 'http:') ? u.origin : '';
+  } catch (e) {
+    return '';
+  }
+}
+
+// The overlay's frame URL: the link's own (absolute) Envoy URL with embed=1,
+// or null when the link doesn't point at the Envoy host (it stays a link)
+function registerEmbedUrl(href, base) {
+  var origin = envoyOrigin(base);
+  if (!origin || typeof href !== 'string' || !href) return null;
+  try {
+    var u = new URL(href);
+    if (u.origin !== origin) return null;
+    u.searchParams.set('embed', '1');
+    return u.href;
+  } catch (e) {
+    return null;
+  }
+}
+
+// A message from Envoy's embedded page: exact origin and source
+function isEnvoyRegisterMessage(event, base) {
+  var origin = envoyOrigin(base);
+  var data = event && event.data;
+  return !!origin && !!event && event.origin === origin &&
+    !!data && typeof data === 'object' && data.source === REG_MESSAGE_SOURCE && typeof data.type === 'string';
+}
+
+// A plain primary click (anything else keeps normal link behaviour)
+function isPlainClick(e) {
+  return e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey;
+}
+
+// The config that governs a Register link, when it opts into the overlay
+function regModalConfigFor(el) {
+  var cfg = null;
+  if (el.id === 'modalRegister') cfg = CALENDAR_CONFIG;
+  else if (el.hasAttribute('data-envoy-register')) cfg = window.EVENT_SESSIONS_CONFIG || null;
+  if (!cfg || cfg.registerModal !== true || !cfg.envoyFeedBase) return null;
+  return cfg;
+}
+
+function injectRegModalStyle() {
+  if (document.getElementById('cal-reg-style')) return;
+  var style = document.createElement('style');
+  style.id = 'cal-reg-style';
+  style.textContent =
+    'html.cal-reg-open,html.cal-reg-open body{overflow:hidden}' +
+    '.cal-reg-overlay{position:fixed;top:0;right:0;bottom:0;left:0;z-index:10000;display:flex;align-items:center;justify-content:center;' +
+      'padding:16px;background:rgba(0,0,0,.55);box-sizing:border-box;font-family:inherit}' +
+    '.cal-reg-overlay[hidden]{display:none}' +
+    '.cal-reg-overlay *,.cal-reg-overlay *::before,.cal-reg-overlay *::after{box-sizing:border-box}' +
+    '.cal-reg-panel{position:relative;display:flex;flex-direction:column;width:100%;max-width:760px;height:90vh;height:90dvh;' +
+      'background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}' +
+    '.cal-reg-header{flex:none;display:flex;align-items:center;justify-content:space-between;gap:12px;' +
+      'padding:6px 6px 6px 20px;border-bottom:1px solid #e5e7eb;background:#fff}' +
+    '.cal-reg-title{margin:0;padding:0;font-family:inherit;font-size:1.0625rem;line-height:1.3;font-weight:700;letter-spacing:normal;' +
+      'text-transform:none;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}' +
+    '.cal-reg-title:focus{outline:none}' +
+    '.cal-reg-close{flex:none;width:44px;height:44px;display:flex;align-items:center;justify-content:center;margin:0;padding:0;' +
+      'border:0;border-radius:50%;background:transparent;color:#374151;font-family:inherit;font-size:1.75rem;line-height:1;cursor:pointer}' +
+    '.cal-reg-close:hover{background:#f3f4f6;color:#111827}' +
+    '.cal-reg-close:focus-visible{outline:2px solid #111827;outline-offset:2px}' +
+    '.cal-reg-fallback{flex:none;margin:0;padding:10px 20px;background:#fef3c7;color:#111827;font-size:.875rem;line-height:1.45}' +
+    '.cal-reg-fallback[hidden]{display:none}' +
+    '.cal-reg-fallback a{color:inherit;font-weight:600;text-decoration:underline}' +
+    '.cal-reg-body{position:relative;flex:1 1 auto;min-height:0;background:#fff}' +
+    '.cal-reg-loading{position:absolute;top:28px;left:0;right:0;margin:0;text-align:center;color:#6b7280;font-size:.9rem}' +
+    '.cal-reg-loading[hidden]{display:none}' +
+    '.cal-reg-frame{position:absolute;top:0;left:0;width:100%;height:100%;border:0;display:block;background:transparent}' +
+    '.cal-reg-sentinel{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}' +
+    '@media (max-width:767px){' +
+      '.cal-reg-overlay{padding:0;align-items:stretch}' +
+      '.cal-reg-panel{max-width:none;height:100vh;height:100dvh;border-radius:0;box-shadow:none}' +
+    '}';
+  document.head.appendChild(style);
+}
+
+function buildRegModal() {
+  injectRegModalStyle();
+  var root = document.createElement('div');
+  root.className = 'cal-reg-overlay';
+  root.setAttribute('role', 'dialog');
+  root.setAttribute('aria-modal', 'true');
+  root.setAttribute('aria-labelledby', 'cal-reg-title');
+  root.hidden = true;
+  root.innerHTML =
+    '<span class="cal-reg-sentinel" tabindex="0" aria-hidden="true"></span>' +
+    '<div class="cal-reg-panel">' +
+      '<div class="cal-reg-header">' +
+        '<h2 class="cal-reg-title" id="cal-reg-title" tabindex="-1"></h2>' +
+        '<button type="button" class="cal-reg-close" aria-label="Close registration">&times;</button>' +
+      '</div>' +
+      '<p class="cal-reg-fallback" role="status" hidden>Registration is taking a while to load. ' +
+        '<a class="cal-reg-fallback-link" target="_blank" rel="noopener">Open registration in a new tab</a></p>' +
+      '<div class="cal-reg-body"><p class="cal-reg-loading">Loading registration…</p></div>' +
+    '</div>' +
+    '<span class="cal-reg-sentinel" tabindex="0" aria-hidden="true"></span>';
+  document.body.appendChild(root);
+
+  var m = {
+    root: root,
+    title: root.querySelector('.cal-reg-title'),
+    closeBtn: root.querySelector('.cal-reg-close'),
+    fallback: root.querySelector('.cal-reg-fallback'),
+    fallbackLink: root.querySelector('.cal-reg-fallback-link'),
+    body: root.querySelector('.cal-reg-body'),
+    loading: root.querySelector('.cal-reg-loading'),
+    iframe: null, trigger: null, base: '', open: false, ready: false, completed: false, timer: null, pushed: false
+  };
+  var sentinels = root.querySelectorAll('.cal-reg-sentinel');
+  // Tab past the end wraps to the close button; Shift+Tab past the start wraps to the form
+  sentinels[1].addEventListener('focus', function() { m.closeBtn.focus(); });
+  sentinels[0].addEventListener('focus', function() { (m.iframe || m.closeBtn).focus(); });
+  m.closeBtn.addEventListener('click', function() { closeRegModal(false); });
+  return m;
+}
+
+// The overlay title: the event's name where the page shows one
+function regModalTitle(trigger) {
+  var el = trigger.id === 'modalRegister' ? document.getElementById('modalTitle') : document.querySelector('h1');
+  var text = el ? (el.textContent || '').replace(/\s+/g, ' ').trim() : '';
+  return text ? 'Register: ' + text : 'Registration';
+}
+
+function openRegModal(trigger, url, cfg) {
+  var m = regModal || (regModal = buildRegModal());
+  if (m.open) return;
+  m.open = true;
+  m.ready = false;
+  m.completed = false;
+  m.trigger = trigger;
+  m.base = cfg.envoyFeedBase;
+  m.title.textContent = regModalTitle(trigger);
+  m.fallbackLink.setAttribute('href', trigger.getAttribute('href'));
+  m.fallback.hidden = true;
+  m.loading.hidden = false;
+
+  // Back button closes the overlay (pushed before the frame loads)
+  try {
+    history.pushState({ calRegModal: true }, '');
+    m.pushed = true;
+  } catch (e) {
+    m.pushed = false;
+  }
+
+  // A fresh frame each time: its first load adds no history entry
+  var iframe = document.createElement('iframe');
+  iframe.className = 'cal-reg-frame';
+  iframe.title = 'Registration form';
+  // Envoy learns the parent origin from the referrer in browsers without
+  // location.ancestorOrigins; send the origin only, never the page path
+  iframe.setAttribute('referrerpolicy', 'origin');
+  iframe.addEventListener('load', function() { m.loading.hidden = true; });
+  iframe.src = url;
+  m.body.appendChild(iframe);
+  m.iframe = iframe;
+
+  m.root.hidden = false;
+  document.documentElement.classList.add('cal-reg-open');
+  m.timer = setTimeout(function() {
+    if (m.open && !m.ready) m.fallback.hidden = false;
+  }, REG_MODAL_READY_MS);
+  m.closeBtn.focus();
+}
+
+// fromHistory: the Back button already popped our entry
+function closeRegModal(fromHistory) {
+  var m = regModal;
+  if (!m || !m.open) return;
+  m.open = false;
+  if (m.timer) clearTimeout(m.timer);
+  m.timer = null;
+  if (m.iframe && m.iframe.parentNode) m.iframe.parentNode.removeChild(m.iframe);
+  m.iframe = null;
+  m.root.hidden = true;
+  document.documentElement.classList.remove('cal-reg-open');
+
+  var trigger = m.trigger;
+  m.trigger = null;
+  if (trigger && document.documentElement.contains(trigger) && trigger.getClientRects().length) trigger.focus();
+
+  var pushed = m.pushed;
+  m.pushed = false;
+  if (!fromHistory && pushed) popRegHistory(2);
+}
+
+// Pop the overlay's history entry. If Back lands on an entry the frame added
+// (e.g. an in-frame anchor jump) instead of ours, no popstate reaches this
+// page; try once more so the next Back press isn't a dead one.
+function popRegHistory(tries) {
+  if (tries <= 0 || !(history.state && history.state.calRegModal)) return;
+  var popped = false;
+  function onPop() { popped = true; }
+  window.addEventListener('popstate', onPop, { once: true });
+  history.back();
+  setTimeout(function() {
+    window.removeEventListener('popstate', onPop);
+    if (!popped) popRegHistory(tries - 1);
+  }, 400);
+}
+
+// After a registration: re-read the sessions feed so full / waitlist states
+// update — the calendar's chips and open popup, or the event page's picker
+function refreshRegistrationStatus() {
+  if (calendarInstance) {
+    var pending = loadEnvoyStatus(calendarInstance);
+    if (pending) pending.then(function(answers) {
+      var modal = document.getElementById('eventModal');
+      if (!answers || !popupEvent || !modal || modal.style.display === 'none' || !(popupEvent.slug in answers)) return;
+      var envoy = answers[popupEvent.slug];
+      applyRegistration(
+        document.getElementById('modalStatus'),
+        document.getElementById('modalRegister'),
+        envoy,
+        envoy && popupEvent.start ? (envoy.byKey[sessionKey(popupEvent.start)] || null) : null,
+        { showSpots: true, registerText: 'Register for this date' }
+      );
+    });
+  }
+  if (eventRegistrationRefresh) eventRegistrationRefresh();
+}
+
+function onRegModalMessage(e) {
+  var m = regModal;
+  if (!m || !m.open || !m.iframe || e.source !== m.iframe.contentWindow) return;
+  if (!isEnvoyRegisterMessage(e, m.base)) return;
+  if (e.data.type === 'ready') {
+    m.ready = true;
+    m.loading.hidden = true;
+    m.fallback.hidden = true;
+  } else if (e.data.type === 'complete' && (e.data.status === 'confirmed' || e.data.status === 'waitlisted')) {
+    // The confirmation stays on screen in the overlay; refresh once
+    if (!m.completed) {
+      m.completed = true;
+      refreshRegistrationStatus();
+    }
+  }
+}
+
+function initRegisterModal() {
+  var calOn = CALENDAR_CONFIG.registerModal === true;
+  var pageOn = !!(window.EVENT_SESSIONS_CONFIG && window.EVENT_SESSIONS_CONFIG.registerModal === true);
+  if ((!calOn && !pageOn) || !window.postMessage || !window.history || !history.pushState) return;
+
+  document.addEventListener('click', function(e) {
+    if (e.defaultPrevented || !isPlainClick(e) || !e.target || !e.target.closest) return;
+    var el = e.target.closest('#modalRegister, [data-envoy-register]');
+    if (!el) return;
+    var cfg = regModalConfigFor(el);
+    if (!cfg) return;
+    var url = registerEmbedUrl(el.getAttribute('href'), cfg.envoyFeedBase);
+    if (!url) return;
+    e.preventDefault();
+    openRegModal(el, url, cfg);
+  });
+
+  window.addEventListener('message', onRegModalMessage);
+
+  // Back button (or any history step off our entry) closes the overlay
+  window.addEventListener('popstate', function(e) {
+    if (regModal && regModal.open && !(e.state && e.state.calRegModal)) closeRegModal(true);
+  });
+
+  // Esc closes the overlay only (captured before the popup's own Esc handler)
+  window.addEventListener('keydown', function(e) {
+    if (!regModal || !regModal.open || e.key !== 'Escape') return;
+    e.preventDefault();
+    e.stopPropagation();
+    closeRegModal(false);
+  }, true);
+
+  // Focus stays inside the overlay while it's open
+  document.addEventListener('focusin', function(e) {
+    if (regModal && regModal.open && !regModal.root.contains(e.target)) regModal.closeBtn.focus();
+  });
 }
